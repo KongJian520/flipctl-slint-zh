@@ -52,7 +52,9 @@ fn read_locales(dir: &std::path::Path) -> Vec<Locale> {
                 continue;
             }
             let Some((key, value)) = line.split_once('=') else { continue };
-            let (key, value) = (key.trim(), unquote(value.trim()));
+            // The value keeps its inner spaces: "Connected to: " ends in one on
+            // purpose, and trimming it here silently shortened the row by a space.
+            let (key, value) = (key.trim(), unquote(value.trim_start()));
             match key {
                 "locale" => id = value,
                 "name" => name = value,

@@ -28,9 +28,10 @@ const UNSET: usize = usize::MAX;
 
 static CURRENT: AtomicUsize = AtomicUsize::new(UNSET);
 
-/// The default: Chinese, because that is the panel this build is for. A build that
-/// wants another default changes this one line.
-const DEFAULT: &str = "zh-Hans";
+/// The library's default is the source language. Which language a *panel* starts in
+/// is the binary's decision, not a crate's: flipctl asks for zh-Hans in main, and a
+/// golden that drew Chinese would be a golden nobody could read the diff of.
+const DEFAULT: &str = "en";
 
 /// Every language in the image, `en` first.
 pub fn locales() -> &'static [Locale] {
