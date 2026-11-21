@@ -333,7 +333,7 @@ mod demo {
                     label: flipper_ui::strings::t(r.label).into(),
                     // A menu row is a place, not an app: nothing runs it.
                     tag: Default::default(),
-                    status: status.as_str().into(),
+                    status: flipper_ui::strings::t(&status).into(),
                     icon: r.icon,
                     picture: Default::default(),
                     frames: r.frames,
@@ -1763,7 +1763,7 @@ mod detail {
         let mut out = Vec::new();
         for (label, value) in [
             ("detail.model", s.model.as_str()),
-            ("Hostname", &s.hostname),
+            (flipper_ui::strings::t("detail.hostname"), &s.hostname),
             ("detail.soc", &s.soc),
             ("detail.cpu", &s.cpu),
             ("detail.cpu_serial", &s.serial),
@@ -1786,7 +1786,7 @@ mod detail {
         let current = long("Current Profile", format!("{} {build}", s.profile).trim());
         out.extend(install_rows(&s.install, current));
         out.extend(long("detail.kernel", &s.kernel));
-        sections.push(("Software", std::mem::take(&mut out)));
+        sections.push((flipper_ui::strings::t("text.software"), std::mem::take(&mut out)));
         if let Some(u) = &s.ufs {
             for (label, value) in [
                 ("detail.ufs", u.name.as_str()),
@@ -2269,7 +2269,7 @@ mod detail {
                 } else {
                     got
                 };
-                out.push(row("Downloading", &said));
+                out.push(row("state.downloading", &said));
                 out.push(text("detail.do_not_power_off"));
             }
             Applying::Booting => {
@@ -2277,7 +2277,7 @@ mod detail {
                 out.push(text("detail.do_not_power_off"));
             }
             Applying::Failed(e) => {
-                out.push(row("Install failed", ""));
+                out.push(row("text.install_failed", ""));
                 out.extend(wrapped(e));
             }
             Applying::No => {
@@ -2312,7 +2312,7 @@ mod detail {
         let listing = match p.listing.borrow().clone() {
             Some(Ok(l)) => l,
             Some(Err(why)) => {
-                let mut out = vec![row("Cannot check for updates", "")];
+                let mut out = vec![row("text.cannot_check_updates", "")];
                 out.extend(wrapped(&why));
                 return out;
             }
@@ -2339,7 +2339,7 @@ mod detail {
             }
         }
         if let Some(kept) = listing.kept {
-            out.push(row("Previous", &kept.to_string()));
+            out.push(row("action.previous", &kept.to_string()));
         }
         out.push(divider());
         match p.step.borrow().clone() {
@@ -2349,22 +2349,22 @@ mod detail {
                 out.push(text("detail.do_not_power_off"));
             }
             Some(Step::Done(results)) => {
-                out.push(row("Done", ""));
+                out.push(row("action.done", ""));
                 out.extend(wrapped(&p.goal.borrow()));
                 for said in &results {
                     out.extend(wrapped(said));
                 }
-                out.push(text("Reboot to use it"));
+                out.push(text("text.reboot_to_use"));
             }
             Some(Step::Failed(e)) => {
-                out.push(row("Update failed", ""));
+                out.push(row("text.update_failed", ""));
                 out.extend(wrapped(&e));
             }
             None if free.is_empty() && !p.forced() => {}
             None => {
                 if p.forced() {
                     let only = p.only_profile().map(|o| boot::display_name(&o.name));
-                    out.push(row("Profiles", only.as_deref().unwrap_or("All")));
+                    out.push(row("text.profiles", only.as_deref().unwrap_or("All")));
                 }
                 match p.offers().get(p.at) {
                     Some(offer) => {
@@ -2372,16 +2372,16 @@ mod detail {
                         let channel =
                             if p.forced() { offer.branch.as_str() } else { p.channel.name() };
                         out.push(row("action.channel", channel));
-                        out.push(row("Download", &update::megabytes(offer.bytes)));
+                        out.push(row("action.download", &update::megabytes(offer.bytes)));
                         let going = p.going(&listing, offer);
                         let of = listing.profiles.len();
                         out.push(text(&format!("Updates {going} of {of} profiles")));
                         if p.forced() && p.modified() {
-                            out.push(text("Package and system changes are dropped"));
-                            out.push(text("These keep a copy to go back to"));
+                            out.push(text("text.changes_dropped"));
+                            out.push(text("text.keep_a_copy"));
                         }
                     }
-                    None if p.forced() => out.push(text("no build for these profiles")),
+                    None if p.forced() => out.push(text("text.no_build")),
                     None => {
                         out.push(row("action.channel", p.channel.name()));
                         let none = format!("no newer {} build", p.channel.name());
@@ -3325,7 +3325,7 @@ fn apply_text_input(
     screen.set_kb_tab_label(input.layout.tab_label().into());
     screen.set_kb_tab_focus(input.tab_focus());
     screen.set_kb_tab_pressed(input.tab_pressed());
-    screen.set_kb_buttons(demo::labels(&["Cancel", "", "", "", "Done"]));
+    screen.set_kb_buttons(demo::labels(&["action.cancel", "", "", "", "action.done"]));
     screen.set_kb_discard(input.discard.map_or(-1, |at| at as i32));
 }
 
@@ -3540,7 +3540,12 @@ const MANAGER_TITLE: &str = "menu.settings.apps";
 /// The trail over the manager's info page, under Settings where the manager lives.
 #[cfg(feature = "slint")]
 fn manager_info_trail(app: &flipper_ui::AppEntry) -> String {
-    format!("> {} > {MANAGER_TITLE} > {}", demo::SETTINGS.title, app.name)
+    format!(
+        "> {} > {} > {}",
+        flipper_ui::strings::t(demo::SETTINGS.title),
+        flipper_ui::strings::t(MANAGER_TITLE),
+        app.name
+    )
 }
 
 /// The manager's list: every installed app, flat, whatever folder it sits in, with
@@ -3571,7 +3576,7 @@ fn offer_labels(
         .iter()
         .map(|offer| {
             let what = if offer.present(roots) {
-                "installed".to_string()
+                "state.installed".to_string()
             } else {
                 flipper_ui::app::human_size(offer.size)
             };
@@ -3621,21 +3626,26 @@ fn apply_manager(
     // job: it moves to the last slot and becomes the action, the same one Ok does
     // on the selected row. Which list you are on is the trail's business, above.
     let buttons: Vec<String> = if install {
-        ["Close", "", "", "", "Install"]
+        ["action.close", "", "", "", "action.install"]
     } else {
-        ["Close", "", "", "Install", "View"]
+        ["action.close", "", "", "action.install", "action.view"]
     }
     .iter()
     .map(|s| s.to_string())
     .collect();
-    let tab = if install { "Install" } else { "View" };
+    let tab = if install { "action.install" } else { "action.view" };
     apply_app_list(
         screen,
         &rows,
         selected,
         &buttons,
         scroll,
-        &[demo::SETTINGS.title.into(), MANAGER_TITLE.into(), tab.into()],
+        &[
+            flipper_ui::strings::t(demo::SETTINGS.title)
+                .to_string(),
+            flipper_ui::strings::t(MANAGER_TITLE).to_string(),
+            flipper_ui::strings::t(tab).to_string(),
+        ],
     );
 }
 
@@ -3712,9 +3722,9 @@ fn apply_app_list(
             let (picture, frames) =
                 row.icon.as_deref().and_then(icon_cached).unwrap_or((Default::default(), 1));
             flipper_ui::ui::ListItem {
-                label: row.label.as_str().into(),
+                label: flipper_ui::strings::t(&row.label).into(),
                 tag: row.tag.as_str().into(),
-                status: row.status.as_str().into(),
+                status: flipper_ui::strings::t(&row.status).into(),
                 icon: 0,
                 picture,
                 frames,
@@ -3735,7 +3745,10 @@ fn apply_app_list(
     screen.set_app_selected(selected);
     screen.set_app_items(slint::ModelRc::new(slint::VecModel::from(items)));
     screen.set_app_buttons(slint::ModelRc::new(slint::VecModel::from(
-        buttons.iter().map(|h| slint::SharedString::from(h.as_str())).collect::<Vec<_>>(),
+        buttons
+            .iter()
+            .map(|h| slint::SharedString::from(flipper_ui::strings::t(h)))
+            .collect::<Vec<_>>(),
     )));
 }
 
@@ -5551,7 +5564,7 @@ fn panel(
                     dialog = Some(Dialog {
                         lines,
                         left: "Cancel",
-                        right: "Install",
+                        right: "action.install",
                         act: DialogAct::InstallDeps,
                     });
                     deps = Some(Deps::Asking(idx, m));
@@ -5750,7 +5763,7 @@ fn panel(
                             // to "installed" either way, but a download that ends in
                             // the dialog simply vanishing reads as one that gave up.
                             // It closes by itself once read, since nothing is asked.
-                            let lines = vec![name, "installed".into()];
+                            let lines = vec![name, "state.installed".into()];
                             notice = Some((
                                 lines.clone(),
                                 Instant::now() + Duration::from_millis(timing::NOTICE_MS as u64),
