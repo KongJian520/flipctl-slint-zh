@@ -41,11 +41,15 @@ pub use flipper_ui::Ethernet;
 pub use flipper_ui::{dropdown, font, keyboard, paint, pixel, theme};
 
 pub mod app;
+pub mod ask;
+pub mod port;
 #[cfg(feature = "render")]
 pub mod render;
 pub use app::{
     choice, gauge, heading, item, pair, redraw, rule, text, App, Item, Page, Row, Text, Ui,
 };
+pub use ask::{claim, type_text, Typing};
+pub use port::device_port_name;
 
 /// The touchpad and the motor, which a hosted app opens itself: the compositor has
 /// no pointer, so the pad reaches nobody unless somebody reads it.
@@ -267,18 +271,24 @@ macro_rules! main {
                     self.items.set_vec(
                         items
                             .iter()
-                            .map(|i| ListItem {
-                                label: shared(&i.label),
-                                tag: shared(&i.tag),
-                                status: shared(&i.status),
-                                icon: 0,
-                                picture: slint::Image::default(),
-                                frames: 1,
-                                chevrons: i.chevrons,
-                                dim: i.dim,
-                                value: shared(&i.value),
-                                at_start: i.at_start,
-                                at_end: i.at_end,
+                            .map(|i| {
+                                let bar = i.bar.map(|f| $crate::dropdown::bar(&i.status, f));
+                                ListItem {
+                                    label: shared(&i.label),
+                                    tag: shared(&i.tag),
+                                    status: shared(bar.as_ref().map_or(&i.status, |b| &b.text)),
+                                    icon: 0,
+                                    picture: slint::Image::default(),
+                                    frames: 1,
+                                    chevrons: i.chevrons,
+                                    dim: i.dim,
+                                    value: shared(&i.value),
+                                    at_start: i.at_start,
+                                    at_end: i.at_end,
+                                    bar: bar.is_some(),
+                                    bar_fill: bar.as_ref().map_or(0.0, |b| b.fill_w as f32),
+                                    bar_text_x: bar.as_ref().map_or(0.0, |b| b.text_x as f32),
+                                }
                             })
                             .collect::<Vec<_>>(),
                     );

@@ -86,7 +86,7 @@ keys' wiring are `main!`'s.
 | `Page` | Shows |
 |---|---|
 | `Page::detail(rows)` | Rows made with `pair`, `rule`, `gauge`, `text`, `choice` and `heading`, `.dim()` for a secondary one. `.fit_gauges()` sizes a gauge around its own label. |
-| `Page::menu(items)` | Rows made with `item("Label")`, then `.status(..)`, `.toggle(..)` or `.range(value, first, last)` for a value Left and Right change. Up and Down move the cursor, `ui.selected()` is the row under it, and Ok flashes the row before `key()` sees it. |
+| `Page::menu(items)` | Rows made with `item("Label")`, then `.status(..)`, `.toggle(..)` or `.range(value, first, last)` for a value Left and Right change, or `.bar(text, fraction)` for a level drawn as a bar with the text in it. Up and Down move the cursor, `ui.selected()` is the row under it, and Ok flashes the row before `key()` sees it. |
 | `Page::log(title, lines)` | Lines of output, oldest first. |
 | `Page::canvas(picture, texts)` | A picture the app paints, below. |
 
@@ -317,13 +317,20 @@ A `.js` is the same block behind `//`:
 
 Every manifest field means what it means for a bundle. Two are filled in when the
 block leaves them out: `runtime`, from the extension, and `wayland`, from the file's
-own name, because a script names no command of its own. An icon is a PNG beside it.
+own name, because a script names no command of its own. An icon is a PNG beside it,
+or the PNG itself in the block, so the app stays one file:
 
-`apps/ping.fap.py` and `apps/uptime.fap.js` are the worked examples, and each is the
-whole app: a file in the tree beside the bundle directories, pushed to `~/Apps` as it
-stands by `--apps`, with nothing to build. `apps/Test Tools/network-leds.fap.py` is the
-menu. Each draws with the panel's own widgets through the `flipctl` module its runtime
-carries, which compiles the pages in `crates/flipctl-app/ui/pages.slint` at run time.
+    # icon = "data:image/png;base64,iVBORw0KGgo..."
+
+flipctl decodes it into its cache for that app when it lists the script, without
+running anything. `base64 -w0 icon.png` gives the part after the comma.
+
+`apps/Network/ping.fap.py` and `apps/System/uptime.fap.js` are the worked examples,
+and each is the whole app: a file in the tree beside the bundle directories, pushed
+to `~/Apps` as it stands by `--apps`, with nothing to build.
+`apps/Test Tools/network-leds.fap.py` is the menu. Each draws with the panel's own
+widgets through the `flipctl` module its runtime carries, which compiles the pages in
+`crates/flipctl-app/ui/pages.slint` at run time.
 Both runtimes run the device's own interpreter, `python3` or `nodejs` from their `apt`,
 and carry only the drawing stack.
 
@@ -485,6 +492,9 @@ What the crate gives the app:
 | `picture` | A `paint::Surface` as an image, for an app that draws pixels. |
 | `paint`, `font`, `pixel`, `theme` | The primitives, the panel's bitmap fonts, and every token. |
 | `dropdown` | The settings row's own geometry: what to put in a `DropRow`, and where a picker's options go. |
+| `device_port_name` | The case's name for the USB-C port a PC plugs into, such as `USB-C1`, from the device tree; empty when it names none. |
+| `type_text`, `Typing` | flipctl's own keyboard over the app, for a line of text. Returns at once; `Typing::take` has the answer once the user is done, the text on Done or `None` on Cancel, and the page is drawn again when it arrives. Only the app in front can ask. On the socket it is `POST /keyboard?title=..&text=..`, answered with `{"text":..}`. |
+| `claim` | Hardware borrowed from flipctl (`udc`, `usb/<port>` and the rest, listed in `claim.rs`) for as long as the returned stream is open. Blocks while flipctl prepares it, so ask off the drawing thread. |
 | `keyboard`, `Key::flipper` | The on-screen keyboard's model, `TextInput`, which `TextInputBody` draws. It takes flipper-ui's key names, which `Key::flipper` gives. |
 | `TouchpadSource`, `Haptic` | The pad and the motor, behind the `device` feature. The compositor has no pointer, so an app that wants the pad opens it itself. |
 
