@@ -3154,7 +3154,9 @@ fn card_of(
     };
 
     flipper_ui::ui::SwitchCard {
-        name: p.name.as_str().into(),
+        // The card's title is drawn here and the name itself is an identity used
+        // by the actions, so the translation stops at this boundary.
+        name: flipper_ui::strings::t(&p.name).into(),
         x: p.state.x as f32,
         y: p.state.y as f32,
         w: p.state.w as f32,
@@ -8152,8 +8154,9 @@ fn panel(
                 sw.placed().into_iter().map(|p| card_of(&p, &mut card_images)).collect();
             screen.set_switch_cards(slint::ModelRc::new(slint::VecModel::from(cards)));
             screen.set_switch_can_kill(sw.can_kill());
+            screen.set_switch_kill(flipper_ui::strings::t("action.kill").into());
             screen.set_switch_pressed_slot(press.soft_slot());
-            screen.set_switch_empty("No running apps".into());
+            screen.set_switch_empty(flipper_ui::strings::t("switcher.empty").into());
         }
 
         // The pad, which only the text-input screen has anything to do with. Read

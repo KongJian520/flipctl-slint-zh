@@ -211,6 +211,7 @@ export component Root inherits Window {
     // The app switcher, over whatever was showing when it opened.
     in property <[SwitchCard]> switch_cards;
     in property <bool> switch_can_kill;
+    in property <string> switch_kill;
     in property <int> switch_pressed_slot: -1;
     in property <string> switch_empty;
 
@@ -441,6 +442,7 @@ export component Root inherits Window {
     if root.screen == Screen.switcher: SwitcherBody {
         cards: root.switch_cards;
         can_kill: root.switch_can_kill;
+        kill_label: root.switch_kill;
         pressed_slot: root.switch_pressed_slot;
         empty_text: root.switch_empty;
     }
