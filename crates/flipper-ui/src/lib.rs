@@ -44,6 +44,7 @@ pub mod script;
 #[cfg(feature = "slint")]
 pub mod slint_render;
 pub mod status;
+pub mod strings;
 #[cfg(feature = "wayland")]
 pub mod sway;
 pub mod switcher;

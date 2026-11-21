@@ -11,6 +11,13 @@
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    // The panel's language, from the environment for now. The Settings row that will
+    // write it and re-apply the current screen is the next step; until then a restart
+    // with FLIPCTL_LANG=en is how the other language is seen.
+    match std::env::var("FLIPCTL_LANG").as_deref() {
+        Ok("en") | Ok("EN") => flipper_ui::strings::set_lang(flipper_ui::strings::Lang::En),
+        _ => flipper_ui::strings::set_lang(flipper_ui::strings::Lang::Zh),
+    }
     let args: Vec<String> = std::env::args().skip(1).collect();
     let has = |flag: &str| args.iter().any(|a| a == flag);
     let value =
@@ -222,8 +229,13 @@ mod demo {
     /// SubMenuScene derives its trail from the scene stack rather than storing it,
     /// so a nested screen shows the whole path it was reached by.
     pub fn crumb(stack: &[(&'static Menu, i32, i32)], leaf: &str) -> String {
+        let leaf = flipper_ui::strings::tr_any(leaf);
         let mut parts: Vec<&str> =
-            stack.iter().map(|(m, _, _)| m.title).filter(|t| !t.is_empty()).collect();
+            stack
+            .iter()
+            .map(|(m, _, _)| flipper_ui::strings::tr(m.title))
+            .filter(|t| !t.is_empty())
+            .collect();
         parts.push(leaf);
         format!("> {}", parts.join(" > "))
     }
@@ -272,7 +284,7 @@ mod demo {
                 let (chevrons, value) = chevrons_of(&status);
                 let (at_start, at_end) = row_ends(&r.stat);
                 ListItem {
-                    label: r.label.into(),
+                    label: flipper_ui::strings::tr(r.label).into(),
                     // A menu row is a place, not an app: nothing runs it.
                     tag: Default::default(),
                     status: status.as_str().into(),
@@ -292,7 +304,11 @@ mod demo {
         // The main menu's title is empty, which is also how MenuBody knows to use
         // the higher container anchor and draw no trail.
         screen.set_breadcrumb(
-            if menu.title.is_empty() { String::new() } else { format!("> {}", menu.title) }
+            if menu.title.is_empty() {
+                String::new()
+            } else {
+                format!("> {}", flipper_ui::strings::tr(menu.title))
+            }
                 .as_str()
                 .into(),
         );
@@ -518,14 +534,17 @@ mod demo {
         match stat {
             Stat::None => String::new(),
             // MenuLine keys its chevron layout off this exact string.
-            Stat::Airplane => if net.airplane { "< ON >" } else { "< OFF >" }.into(),
+            Stat::Airplane => {
+                let (on, off) = (flipper_ui::strings::tr("ON"), flipper_ui::strings::tr("OFF"));
+                if net.airplane { format!("< {on} >") } else { format!("< {off} >") }
+            },
             Stat::Wifi => {
                 if !net.wifi_enabled {
-                    "OFF".into()
+                    flipper_ui::strings::tr("OFF").into()
                 } else if !net.wifi_connected {
-                    "not connected".into()
+                    flipper_ui::strings::tr("not connected").into()
                 } else if net.ssid.is_empty() {
-                    "connected".into()
+                    flipper_ui::strings::tr("connected").into()
                 } else {
                     net.ssid.clone()
                 }
@@ -584,7 +603,15 @@ mod detail {
     /// QMI control device for the cell-identity calls.
     const QMI_DEV: &str = "/dev/cdc-wdm0";
     fn row(label: &str, value: &str) -> DetailRow {
-        DetailRow { kind: 0, label: label.into(), value: value.into(), percent: 0, dim: false }
+        // 每个详情行都从这里走，所以翻译放在这里覆盖全部页面；动态值（IP、容量、
+        // SSID）查不到就原样返回，不受影响。
+        DetailRow {
+            kind: 0,
+            label: flipper_ui::strings::tr_any(label).into(),
+            value: flipper_ui::strings::tr_any(value).into(),
+            percent: 0,
+            dim: false,
+        }
     }
 
     /// A secondary row, in the dim tone.
@@ -1381,6 +1408,11 @@ mod detail {
 
         /// Soft-key labels, for the page scrolled to `offset`.
         pub fn buttons(&self, applying: &Applying, offset: i32) -> [&'static str; 5] {
+            self.buttons_raw(applying, offset).map(flipper_ui::strings::tr)
+        }
+
+        /// The labels in English, which is also the key each is translated by.
+        fn buttons_raw(&self, applying: &Applying, offset: i32) -> [&'static str; 5] {
             match self {
                 Live::Update(u) if *applying == Applying::No && !u.loading() => {
                     // The channel is a soft key rather than a second chevron row: a
@@ -1491,7 +1523,10 @@ mod detail {
             return out;
         }
         for r in routes {
-            out.push(row(&format!("{} via {}", r.family, r.dev), &r.gateway));
+            out.push(row(
+                &format!("{} {} {}", r.family, flipper_ui::strings::tr("via"), r.dev),
+                &r.gateway,
+            ));
             if let Some(m) = r.metric {
                 out.push(dim("metric", &m.to_string()));
             }
@@ -3930,7 +3965,15 @@ fn png(
                     detail::eth_links(&w.get()),
                 )));
                 screen.set_eth_selected(select.unwrap_or(0));
-                screen.set_breadcrumb("> Network > Ethernet".into());
+                screen.set_breadcrumb(
+                    format!(
+                        "> {} > {}",
+                        flipper_ui::strings::tr("Network"),
+                        flipper_ui::strings::tr("Ethernet")
+                    )
+                    .as_str()
+                    .into(),
+                );
                 screen.set_screen(Screen::Ethernet);
             }
             // The two update screens read the build server in a thread. A frame of
@@ -3976,7 +4019,15 @@ fn png(
                 _ => want.title().to_string(),
             };
             if !matches!(open, detail::Live::Ethernet(_)) {
-                screen.set_breadcrumb(format!("> {parent} > {leaf}").as_str().into());
+                screen.set_breadcrumb(
+                    format!(
+                        "> {} > {}",
+                        flipper_ui::strings::tr(parent),
+                        flipper_ui::strings::tr_any(&leaf)
+                    )
+                    .as_str()
+                    .into(),
+                );
                 screen.set_screen(Screen::Detail);
             }
         }
@@ -4609,7 +4660,11 @@ fn panel(
             let menu = stack.last().unwrap().0;
             demo::apply_menu(&screen, menu, &net_now);
             screen.set_breadcrumb(
-                if menu.title.is_empty() { String::new() } else { format!("> {}", menu.title) }
+                if menu.title.is_empty() {
+                String::new()
+            } else {
+                format!("> {}", flipper_ui::strings::tr(menu.title))
+            }
                     .as_str()
                     .into(),
             );
