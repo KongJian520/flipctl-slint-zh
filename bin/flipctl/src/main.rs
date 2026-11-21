@@ -14,9 +14,10 @@ fn main() -> ExitCode {
     // The panel's language, from the environment for now. The Settings row that will
     // write it and re-apply the current screen is the next step; until then a restart
     // with FLIPCTL_LANG=en is how the other language is seen.
-    match std::env::var("FLIPCTL_LANG").as_deref() {
-        Ok("en") | Ok("EN") => flipper_ui::strings::set_lang(flipper_ui::strings::Lang::En),
-        _ => flipper_ui::strings::set_lang(flipper_ui::strings::Lang::Zh),
+    if let Ok(id) = std::env::var("FLIPCTL_LANG") {
+        if !flipper_ui::strings::set_locale(&id) {
+            eprintln!("FLIPCTL_LANG={id} is not a locale in this build");
+        }
     }
     let args: Vec<String> = std::env::args().skip(1).collect();
     let has = |flag: &str| args.iter().any(|a| a == flag);
@@ -206,7 +207,7 @@ mod demo {
     /// text protocol without any new field. The matching happens here rather than
     /// in Slint, which has no string predicates.
     ///
-    /// Returns (0, status) for a plain status, (1, "ON"/"OFF") for the toggle whose
+    /// Returns (0, status) for a plain status, (1, "state.on"/"state.off") for the toggle whose
     /// chevrons hold still, and (2, inner) for any other bracketed value.
     pub fn chevrons_of(status: &str) -> (i32, String) {
         if status == "< ON >" || status == "< OFF >" {
@@ -229,11 +230,11 @@ mod demo {
     /// SubMenuScene derives its trail from the scene stack rather than storing it,
     /// so a nested screen shows the whole path it was reached by.
     pub fn crumb(stack: &[(&'static Menu, i32, i32)], leaf: &str) -> String {
-        let leaf = flipper_ui::strings::tr_any(leaf);
+        let leaf = flipper_ui::strings::t(leaf);
         let mut parts: Vec<&str> =
             stack
             .iter()
-            .map(|(m, _, _)| flipper_ui::strings::tr(m.title))
+            .map(|(m, _, _)| flipper_ui::strings::t(m.title))
             .filter(|t| !t.is_empty())
             .collect();
         parts.push(leaf);
@@ -284,7 +285,7 @@ mod demo {
                 let (chevrons, value) = chevrons_of(&status);
                 let (at_start, at_end) = row_ends(&r.stat);
                 ListItem {
-                    label: flipper_ui::strings::tr(r.label).into(),
+                    label: flipper_ui::strings::t(r.label).into(),
                     // A menu row is a place, not an app: nothing runs it.
                     tag: Default::default(),
                     status: status.as_str().into(),
@@ -307,7 +308,7 @@ mod demo {
             if menu.title.is_empty() {
                 String::new()
             } else {
-                format!("> {}", flipper_ui::strings::tr(menu.title))
+                format!("> {}", flipper_ui::strings::t(menu.title))
             }
                 .as_str()
                 .into(),
@@ -387,14 +388,14 @@ mod demo {
         /// The breadcrumb crumb, which is also the screen's name.
         pub fn title(self) -> &'static str {
             match self {
-                Detail::System => "System info",
-                Detail::Ethernet => "Ethernet",
-                Detail::Routing => "Routing info",
-                Detail::Disk => "Disk info",
-                Detail::Battery => "Battery info",
-                Detail::Modem => "5G Modem",
-                Detail::Update => "Reinstall FlipperOS",
-                Detail::Profile => "Update FlipperOS",
+                Detail::System => "menu.settings.system",
+                Detail::Ethernet => "menu.network.ethernet",
+                Detail::Routing => "menu.network.routing",
+                Detail::Disk => "menu.settings.disk",
+                Detail::Battery => "menu.settings.battery",
+                Detail::Modem => "menu.network.modem",
+                Detail::Update => "menu.settings.reinstall",
+                Detail::Profile => "menu.settings.update",
                 Detail::Revisions => "Software Revisions",
             }
         }
@@ -409,9 +410,9 @@ mod demo {
         None,
         /// `< ON >` / `< OFF >`, which MenuLine renders with chevrons.
         Airplane,
-        /// OFF when the radio is off, else the SSID, else "not connected".
+        /// OFF when the radio is off, else the SSID, else "state.not_connected".
         Wifi,
-        /// "Airplane mode" while that is what blocks the row.
+        /// "menu.network.airplane" while that is what blocks the row.
         ModemBlocked,
         /// The capability set the USB-C port is offering.
         UsbPower,
@@ -442,13 +443,13 @@ mod demo {
     /// mode leads because it gates the two rows below it.
     #[rustfmt::skip]
     pub static NETWORK: Menu = Menu {
-        title: "Network",
+        title: "menu.main.network",
         rows: &[
-            Row { label: "Airplane mode", icon: 9, frames: 10, stat: Stat::Airplane, act: Act::Airplane },
-            Row { label: "Routing info", icon: 10, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Routing) },
-            Row { label: "5G Modem", icon: 11, frames: 1, stat: Stat::ModemBlocked, act: Act::Detail(Detail::Modem) },
-            Row { label: "Wi-Fi", icon: 12, frames: 1, stat: Stat::Wifi, act: Act::Wifi },
-            Row { label: "Ethernet", icon: 13, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Ethernet) },
+            Row { label: "menu.network.airplane", icon: 9, frames: 10, stat: Stat::Airplane, act: Act::Airplane },
+            Row { label: "menu.network.routing", icon: 10, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Routing) },
+            Row { label: "menu.network.modem", icon: 11, frames: 1, stat: Stat::ModemBlocked, act: Act::Detail(Detail::Modem) },
+            Row { label: "menu.network.wifi", icon: 12, frames: 1, stat: Stat::Wifi, act: Act::Wifi },
+            Row { label: "menu.network.ethernet", icon: 13, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Ethernet) },
         ],
     };
 
@@ -456,7 +457,7 @@ mod demo {
     ///
     /// No icons: unlike `networkMenu`, that function sets no icon map, so every
     /// row here is label-only and the label starts where the icon would end.
-    /// "System info" has no factory in the prototype either.
+    /// "menu.settings.system" has no factory in the prototype either.
     /// Whether a submenu is one the app switcher tracks.
     ///
     /// Network and Settings, which is what the prototype marks as apps: they are
@@ -473,30 +474,30 @@ mod demo {
 
     #[rustfmt::skip]
     pub static SETTINGS: Menu = Menu {
-        title: "Settings",
+        title: "menu.main.settings",
         rows: &[
-            Row { label: "System info", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::System) },
-            Row { label: "Battery info", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Battery) },
-            Row { label: "USB-C1 power out", icon: 0, frames: 1, stat: Stat::UsbPower, act: Act::UsbPower },
-            Row { label: "LED Brightness", icon: 0, frames: 1, stat: Stat::None, act: Act::Sub(&LEDS) },
-            Row { label: "Disk info", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Disk) },
-            Row { label: "App Manager", icon: 0, frames: 1, stat: Stat::None, act: Act::Manager },
-            Row { label: "OS Profiles", icon: 0, frames: 1, stat: Stat::None, act: Act::Boot },
-            Row { label: "Update FlipperOS", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Profile) },
-            Row { label: "Reinstall FlipperOS", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Update) },
-            Row { label: "Reboot", icon: 0, frames: 1, stat: Stat::None, act: Act::Reboot },
-            Row { label: "Shutdown", icon: 0, frames: 1, stat: Stat::None, act: Act::Shutdown },
+            Row { label: "menu.settings.system", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::System) },
+            Row { label: "menu.settings.battery", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Battery) },
+            Row { label: "menu.settings.usbc1", icon: 0, frames: 1, stat: Stat::UsbPower, act: Act::UsbPower },
+            Row { label: "menu.settings.led", icon: 0, frames: 1, stat: Stat::None, act: Act::Sub(&LEDS) },
+            Row { label: "menu.settings.disk", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Disk) },
+            Row { label: "menu.settings.apps", icon: 0, frames: 1, stat: Stat::None, act: Act::Manager },
+            Row { label: "menu.settings.profiles", icon: 0, frames: 1, stat: Stat::None, act: Act::Boot },
+            Row { label: "menu.settings.update", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Profile) },
+            Row { label: "menu.settings.reinstall", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Update) },
+            Row { label: "menu.settings.reboot", icon: 0, frames: 1, stat: Stat::None, act: Act::Reboot },
+            Row { label: "menu.settings.shutdown", icon: 0, frames: 1, stat: Stat::None, act: Act::Shutdown },
         ],
     };
 
     /// The brightness of each LED group the MCU drives. The prototype has none.
     #[rustfmt::skip]
     pub static LEDS: Menu = Menu {
-        title: "LED Brightness",
+        title: "menu.settings.led",
         rows: &[
-            Row { label: "Link", icon: 0, frames: 1, stat: Stat::Led(Group::Link), act: Act::Led(Group::Link) },
-            Row { label: "Power", icon: 0, frames: 1, stat: Stat::Led(Group::Power), act: Act::Led(Group::Power) },
-            Row { label: "Wattmeter", icon: 0, frames: 1, stat: Stat::Led(Group::Wattmeter), act: Act::Led(Group::Wattmeter) },
+            Row { label: "led.link", icon: 0, frames: 1, stat: Stat::Led(Group::Link), act: Act::Led(Group::Link) },
+            Row { label: "led.power", icon: 0, frames: 1, stat: Stat::Led(Group::Power), act: Act::Led(Group::Power) },
+            Row { label: "led.wattmeter", icon: 0, frames: 1, stat: Stat::Led(Group::Wattmeter), act: Act::Led(Group::Wattmeter) },
         ],
     };
 
@@ -518,12 +519,12 @@ mod demo {
     pub static MAIN: Menu = Menu {
         title: "",
         rows: &[
-            Row { label: "Desktop Computer", icon: 1, frames: 1, stat: Stat::None, act: Act::Unported },
-            Row { label: "Apps", icon: 3, frames: 9, stat: Stat::None, act: Act::Apps },
-            Row { label: "Files", icon: 4, frames: 10, stat: Stat::None, act: Act::Nothing },
-            Row { label: "Network", icon: 5, frames: 10, stat: Stat::None, act: Act::Sub(&NETWORK) },
+            Row { label: "menu.main.desktop", icon: 1, frames: 1, stat: Stat::None, act: Act::Unported },
+            Row { label: "menu.main.apps", icon: 3, frames: 9, stat: Stat::None, act: Act::Apps },
+            Row { label: "menu.main.files", icon: 4, frames: 10, stat: Stat::None, act: Act::Nothing },
+            Row { label: "menu.main.network", icon: 5, frames: 10, stat: Stat::None, act: Act::Sub(&NETWORK) },
             Row { label: "Testing: flipctl2", icon: 6, frames: 9, stat: Stat::None, act: Act::Flipctl2 },
-            Row { label: "Settings", icon: 7, frames: 10, stat: Stat::None, act: Act::Sub(&SETTINGS) },
+            Row { label: "menu.main.settings", icon: 7, frames: 10, stat: Stat::None, act: Act::Sub(&SETTINGS) },
         ],
     };
 
@@ -535,21 +536,21 @@ mod demo {
             Stat::None => String::new(),
             // MenuLine keys its chevron layout off this exact string.
             Stat::Airplane => {
-                let (on, off) = (flipper_ui::strings::tr("ON"), flipper_ui::strings::tr("OFF"));
+                let (on, off) = (flipper_ui::strings::t("state.on"), flipper_ui::strings::t("state.off"));
                 if net.airplane { format!("< {on} >") } else { format!("< {off} >") }
             },
             Stat::Wifi => {
                 if !net.wifi_enabled {
-                    flipper_ui::strings::tr("OFF").into()
+                    flipper_ui::strings::t("state.off").into()
                 } else if !net.wifi_connected {
-                    flipper_ui::strings::tr("not connected").into()
+                    flipper_ui::strings::t("state.not_connected").into()
                 } else if net.ssid.is_empty() {
-                    flipper_ui::strings::tr("connected").into()
+                    flipper_ui::strings::t("state.connected").into()
                 } else {
                     net.ssid.clone()
                 }
             }
-            Stat::ModemBlocked => if net.airplane { "Airplane mode" } else { "" }.into(),
+            Stat::ModemBlocked => if net.airplane { "menu.network.airplane" } else { "" }.into(),
             Stat::UsbPower => flipper_ui::usb_pd::Port::read()
                 .filter(|p| p.powering())
                 .and_then(|p| p.sets.get(p.selected).map(|s| s.short()))
@@ -607,8 +608,8 @@ mod detail {
         // SSID）查不到就原样返回，不受影响。
         DetailRow {
             kind: 0,
-            label: flipper_ui::strings::tr_any(label).into(),
-            value: flipper_ui::strings::tr_any(value).into(),
+            label: flipper_ui::strings::t(label).into(),
+            value: flipper_ui::strings::t(value).into(),
             percent: 0,
             dim: false,
         }
@@ -807,7 +808,7 @@ mod detail {
             Some((disk, kind)) => Disks { internal: usage(Some(disk)), internal_kind: kind, sd },
             // Nothing sysfs names, which is some other board: what it runs from is the
             // best guess at its own storage.
-            None => Disks { internal: sysinfo::disk_at("/"), internal_kind: "Disk", sd },
+            None => Disks { internal: sysinfo::disk_at("/"), internal_kind: "detail.disk", sd },
         }
     }
 
@@ -1408,7 +1409,7 @@ mod detail {
 
         /// Soft-key labels, for the page scrolled to `offset`.
         pub fn buttons(&self, applying: &Applying, offset: i32) -> [&'static str; 5] {
-            self.buttons_raw(applying, offset).map(flipper_ui::strings::tr)
+            self.buttons_raw(applying, offset).map(flipper_ui::strings::t)
         }
 
         /// The labels in English, which is also the key each is translated by.
@@ -1418,38 +1419,38 @@ mod detail {
                     // The channel is a soft key rather than a second chevron row: a
                     // detail screen has no cursor, so two adjustable rows would have
                     // no way to say which one left and right are for.
-                    let update = if u.chosen().is_some() { "Run" } else { "" };
-                    ["Back", "Channel", "", "", update]
+                    let update = if u.chosen().is_some() { "action.run" } else { "" };
+                    ["action.back", "action.channel", "", "", update]
                 }
                 // Nothing while it runs: leaving would hide a run that cannot be
                 // stopped, and powering off in the middle is what it warns about.
                 Live::Profile(p) if p.busy() => ["", "", "", "", ""],
                 Live::Profile(p) if p.finished().is_some() => {
                     let reboot =
-                        if matches!(p.finished(), Some(Step::Done(_))) { "Reboot" } else { "" };
-                    ["Back", "", "", "", reboot]
+                        if matches!(p.finished(), Some(Step::Done(_))) { "menu.settings.reboot" } else { "" };
+                    ["action.back", "", "", "", reboot]
                 }
                 Live::Profile(p) if !p.loading() => {
                     let channel = match (p.forced(), &p.only) {
                         (true, None) => "All",
-                        (true, Some(_)) => "Profile",
-                        (false, _) if p.updatable() => "Channel",
+                        (true, Some(_)) => "detail.profile",
+                        (false, _) if p.updatable() => "action.channel",
                         _ => "",
                     };
                     let rollback = if p.kept().is_some() { "Rollback" } else { "" };
                     let update = if p.chosen().is_some() { "Update" } else { "" };
-                    ["Back", channel, "", rollback, update]
+                    ["action.back", channel, "", rollback, update]
                 }
                 // A long page, read a section at a time, or taken away whole as a
                 // QR code.
                 Live::System(w) => {
                     let revisions = if w.get().install.is_empty() { "" } else { "Revisions" };
-                    ["Back", revisions, "", "QR", self.next_stop(offset).map_or("", |s| s.1)]
+                    ["action.back", revisions, "", "action.qr", self.next_stop(offset).map_or("", |s| s.1)]
                 }
                 Live::Revisions(_) => {
-                    ["Back", "", "", "QR", self.next_stop(offset).map_or("", |s| s.1)]
+                    ["action.back", "", "", "action.qr", self.next_stop(offset).map_or("", |s| s.1)]
                 }
-                _ => ["Back", "", "", "", ""],
+                _ => ["action.back", "", "", "", ""],
             }
         }
 
@@ -1515,20 +1516,20 @@ mod detail {
         }
     }
 
-    /// routing.js: a "Default gateways:" heading, then one line per route.
+    /// routing.js: a "detail.default_gateways" heading, then one line per route.
     fn routing_rows(routes: &[Route]) -> Vec<DetailRow> {
-        let mut out = vec![text("Default gateways:")];
+        let mut out = vec![text("detail.default_gateways")];
         if routes.is_empty() {
-            out.push(dim("No default routes", ""));
+            out.push(dim("detail.no_default_routes", ""));
             return out;
         }
         for r in routes {
             out.push(row(
-                &format!("{} {} {}", r.family, flipper_ui::strings::tr("via"), r.dev),
+                &format!("{} {} {}", r.family, flipper_ui::strings::t("detail.via"), r.dev),
                 &r.gateway,
             ));
             if let Some(m) = r.metric {
-                out.push(dim("metric", &m.to_string()));
+                out.push(dim("detail.metric", &m.to_string()));
             }
         }
         out
@@ -1544,7 +1545,7 @@ mod detail {
     /// mount point, and picking the card's partition by size, fixes both.
     fn one_disk(label: &str, d: &Disk) -> Vec<DetailRow> {
         if !d.mounted {
-            return vec![row(label, "Not mounted")];
+            return vec![row(label, "detail.not_mounted")];
         }
         let pct =
             if d.total_gb > 0.0 { (d.used_gb / d.total_gb * 100.0).round() as i32 } else { 0 };
@@ -1635,11 +1636,11 @@ mod detail {
     fn install_rows(install: &sysinfo::Install, current: Vec<DetailRow>) -> Vec<DetailRow> {
         let number = |b: &sysinfo::Installed| b.number.map(|n| format!("#{n}")).unwrap_or_default();
         match &install.bundle {
-            Some(b) => std::iter::once(row("Install type", format!("Bundle {}", number(b)).trim()))
+            Some(b) => std::iter::once(row("detail.install_type", format!("Bundle {}", number(b)).trim()))
                 .chain(current)
                 .collect(),
             None if install.parts.is_empty() => current,
-            None => std::iter::once(row("Install type", "Custom"))
+            None => std::iter::once(row("detail.install_type", "Custom"))
                 .chain(current)
                 .chain(install.parts.iter().map(|p| row(part_label(&p.name), &number(p))))
                 .collect(),
@@ -1704,48 +1705,48 @@ mod detail {
         let mut sections = Vec::new();
         let mut out = Vec::new();
         for (label, value) in [
-            ("Model", s.model.as_str()),
+            ("detail.model", s.model.as_str()),
             ("Hostname", &s.hostname),
-            ("SoC", &s.soc),
-            ("CPU", &s.cpu),
-            ("CPU serial", &s.serial),
+            ("detail.soc", &s.soc),
+            ("detail.cpu", &s.cpu),
+            ("detail.cpu_serial", &s.serial),
         ] {
             out.extend(long(label, value));
         }
-        out.push(row("Memory", &sysinfo::memory_text(s.mem_used, s.mem_total)));
+        out.push(row("detail.memory", &sysinfo::memory_text(s.mem_used, s.mem_total)));
         sections.push(("Device", std::mem::take(&mut out)));
         if let Some(m) = &s.mcu {
-            for (label, value) in [("MCU", &m.version), ("Slot", &m.slot), ("Boot", &m.boot)] {
+            for (label, value) in [("detail.mcu", &m.version), ("detail.slot", &m.slot), ("Boot", &m.boot)] {
                 out.extend(long(label, value));
             }
-            sections.push(("MCU", std::mem::take(&mut out)));
+            sections.push(("detail.mcu", std::mem::take(&mut out)));
         }
-        out.extend(long("OS", &s.os));
-        for (label, value) in [("Profile", s.profile.as_str()), ("Installed", &s.installed)] {
+        out.extend(long("detail.os", &s.os));
+        for (label, value) in [("detail.profile", s.profile.as_str()), ("Installed", &s.installed)] {
             out.extend(long(label, value));
         }
         let build = if s.build.is_empty() { String::new() } else { format!("#{}", s.build) };
         let current = long("Current Profile", format!("{} {build}", s.profile).trim());
         out.extend(install_rows(&s.install, current));
-        out.extend(long("Kernel", &s.kernel));
+        out.extend(long("detail.kernel", &s.kernel));
         sections.push(("Software", std::mem::take(&mut out)));
         if let Some(u) = &s.ufs {
             for (label, value) in [
-                ("UFS", u.name.as_str()),
-                ("Size", &u.size),
-                ("Version", &u.version),
-                ("Link", &u.link),
-                ("Life used", &u.life),
-                ("Health", &u.health),
+                ("detail.ufs", u.name.as_str()),
+                ("detail.size", &u.size),
+                ("detail.version", &u.version),
+                ("led.link", &u.link),
+                ("detail.life_used", &u.life),
+                ("detail.health", &u.health),
             ] {
                 out.extend(long(label, value));
             }
-            sections.push(("UFS", std::mem::take(&mut out)));
+            sections.push(("detail.ufs", std::mem::take(&mut out)));
         }
         match &s.sd {
             Some(c) => {
                 for (label, value) in
-                    [("SD card", c.name.as_str()), ("SD size", &c.size), ("SD type", &c.kind)]
+                    [("detail.sd_card", c.name.as_str()), ("SD size", &c.size), ("SD type", &c.kind)]
                 {
                     out.extend(long(label, value));
                 }
@@ -1791,20 +1792,20 @@ mod detail {
                     out.push(row("SD lock", "write-protected"));
                 }
             }
-            None => out.push(row("SD card", "none")),
+            None => out.push(row("detail.sd_card", "none")),
         }
         sections.push(("SD", std::mem::take(&mut out)));
         if let Some(p) = &s.pack {
             let b = battery(p);
             for (label, value) in [
-                ("Battery", b.what),
-                ("Capacity", b.capacity),
-                ("Cycles", b.cycles),
+                ("detail.battery", b.what),
+                ("detail.capacity", b.capacity),
+                ("detail.cycles", b.cycles),
                 ("Batt health", b.health),
             ] {
                 out.extend(long(label, &value));
             }
-            sections.push(("Battery", std::mem::take(&mut out)));
+            sections.push(("detail.battery", std::mem::take(&mut out)));
         }
         for (kind, what) in &s.radios {
             out.extend(long(kind, what));
@@ -1817,8 +1818,8 @@ mod detail {
         // Radios and addresses are pushed whether or not they found anything, and an
         // empty section is dropped below: a divider between nothing and nothing is a
         // line with no reason.
-        out.extend(long("Uptime", &s.uptime));
-        sections.push(("Uptime", out));
+        out.extend(long("detail.uptime", &s.uptime));
+        sections.push(("detail.uptime", out));
         sections.retain(|(_, rows)| !rows.is_empty());
         sections
     }
@@ -1866,24 +1867,24 @@ mod detail {
     fn system_qr(s: &System) -> Vec<String> {
         let dash = |v: &str| if v.is_empty() { "-".to_string() } else { v.to_string() };
         let mut out: Vec<(String, String)> = vec![
-            ("Model".into(), s.model.clone()),
+            ("detail.model".into(), s.model.clone()),
             ("Host".into(), s.hostname.clone()),
-            ("SoC".into(), s.soc.clone()),
-            ("CPU".into(), s.cpu.clone()),
-            ("CPU serial".into(), s.serial.clone()),
-            ("Memory".into(), sysinfo::installed_text(s.mem_total)),
+            ("detail.soc".into(), s.soc.clone()),
+            ("detail.cpu".into(), s.cpu.clone()),
+            ("detail.cpu_serial".into(), s.serial.clone()),
+            ("detail.memory".into(), sysinfo::installed_text(s.mem_total)),
         ];
         if let Some(m) = &s.mcu {
             out.extend([
-                ("MCU".into(), m.version.clone()),
+                ("detail.mcu".into(), m.version.clone()),
                 ("MCU slot".into(), m.slot.clone()),
                 ("MCU boot".into(), m.boot.clone()),
             ]);
         }
         out.extend([
-            ("OS".into(), s.os.clone()),
-            ("Profile".into(), s.profile.clone()),
-            ("Kernel".into(), s.kernel.clone()),
+            ("detail.os".into(), s.os.clone()),
+            ("detail.profile".into(), s.profile.clone()),
+            ("detail.kernel".into(), s.kernel.clone()),
             ("flipctl".into(), COMMIT.into()),
         ]);
         // The builds and not their sources: those are a line of ninety characters
@@ -1891,21 +1892,21 @@ mod detail {
         out.extend(builds(&s.install).into_iter().map(|(k, v, _)| (k.into(), v)));
         if let Some(u) = &s.ufs {
             out.extend([
-                ("UFS".into(), u.name.clone()),
-                ("Size".into(), u.size.clone()),
-                ("Version".into(), u.version.clone()),
-                ("Link".into(), u.link.clone()),
-                ("Life used".into(), u.life.clone()),
-                ("Health".into(), u.health.clone()),
+                ("detail.ufs".into(), u.name.clone()),
+                ("detail.size".into(), u.size.clone()),
+                ("detail.version".into(), u.version.clone()),
+                ("led.link".into(), u.link.clone()),
+                ("detail.life_used".into(), u.life.clone()),
+                ("detail.health".into(), u.health.clone()),
             ]);
         }
         if let Some(p) = &s.pack {
             let b = battery(p);
             out.extend([
-                ("Battery".into(), b.what),
-                ("Capacity".into(), b.capacity),
-                ("Cycles".into(), b.cycles),
-                ("Health".into(), b.health),
+                ("detail.battery".into(), b.what),
+                ("detail.capacity".into(), b.capacity),
+                ("detail.cycles".into(), b.cycles),
+                ("detail.health".into(), b.health),
             ]);
         }
         out.extend(s.macs.iter().map(|(what, address)| (format!("{what} MAC"), address.clone())));
@@ -1967,14 +1968,14 @@ mod detail {
     fn disk_rows(d: &Disks) -> Vec<DetailRow> {
         let mut out = one_disk(d.internal_kind, &d.internal);
         out.push(divider());
-        out.extend(one_disk("SD Card", &d.sd));
+        out.extend(one_disk("detail.sd_card", &d.sd));
         out
     }
 
     /// power.js: status and time left, the capacity bar, then the electricals.
     fn battery_rows(b: &Battery) -> Vec<DetailRow> {
         if !b.available {
-            return vec![row("Battery", "Not found")];
+            return vec![row("detail.battery", "detail.not_found")];
         }
         let charging = b.status == "Charging";
         let full = b.status == "Full";
@@ -2001,12 +2002,12 @@ mod detail {
                 _ => "--".into(),
             },
         ));
-        out.push(row("Voltage", &b.voltage.map_or("--".into(), |v| format!("{v:.3} V"))));
+        out.push(row("detail.voltage", &b.voltage.map_or("--".into(), |v| format!("{v:.3} V"))));
         out.push(row("Current", &b.current.map_or("--".into(), |v| format!("{v:.3} A"))));
-        out.push(row("Power", &b.power.map_or("-- W".into(), |v| format!("{v:.3} W"))));
+        out.push(row("led.power", &b.power.map_or("-- W".into(), |v| format!("{v:.3} W"))));
         if let Some(t) = b.temp {
             // sysfs reports tenths of a degree.
-            out.push(row("Temp", &format!("{:.1} C", t as f32 / 10.0)));
+            out.push(row("detail.temp", &format!("{:.1} C", t as f32 / 10.0)));
         }
         out
     }
@@ -2014,7 +2015,7 @@ mod detail {
     /// modem5g.js, in its own row order: identity, signal, cell, then the link.
     fn modem_rows(m: &Modem) -> Vec<DetailRow> {
         if !m.available {
-            return vec![row("Modem", "Not available")];
+            return vec![row("detail.modem", "detail.not_available")];
         }
         let dash = |s: &str| if s.is_empty() { "--".to_string() } else { s.to_string() };
         // techLabel in the prototype uppercases whatever ModemManager reports.
@@ -2026,7 +2027,7 @@ mod detail {
         let mut out = vec![
             row(&dash(&m.operator), &tech),
             row(
-                "Signal",
+                "detail.signal",
                 &format!(
                     "{} ({}/5)",
                     m.signal_quality.map_or("--%".into(), |q| format!("{q}%")),
@@ -2038,7 +2039,7 @@ mod detail {
             out.push(dim("RSRP", &m.rsrp));
         }
         out.push(divider());
-        out.push(row("TAC", &dash(&m.tac)));
+        out.push(row("detail.tac", &dash(&m.tac)));
         out.push(row("Cell ID", &dash(&m.cell_id)));
         out.push(row(
             "PLMN",
@@ -2055,10 +2056,10 @@ mod detail {
             out.push(dim("EARFCN", &m.earfcn));
         }
         out.push(divider());
-        out.push(row("Model", &dash(&m.model)));
+        out.push(row("detail.model", &dash(&m.model)));
         out.push(row("IP", &dash(&m.ip4)));
         out.push(row(
-            "Link",
+            "led.link",
             &match m.dl_mbps {
                 Some(v) => format!("{v:.0} Mbit/s"),
                 None => "--".into(),
@@ -2131,7 +2132,7 @@ mod detail {
         let mut out = Vec::new();
         // The prototype cleans NetworkManager's state string; sysfs gives the plain
         // word already.
-        let state = if iface.connected { "connected" } else { "disconnected" };
+        let state = if iface.connected { "state.connected" } else { "disconnected" };
         out.push(drow(0, &format!("{}  {}", sysinfo::iface_display_name(&iface.name), state), ""));
 
         let speed = sysinfo::format_speed(iface.speed);
@@ -2183,26 +2184,26 @@ mod detail {
     /// would be a lie.
     fn update_rows(u: &UpdateScreen, applying: &Applying) -> Vec<DetailRow> {
         if u.loading() {
-            return vec![text("Checking the build server...")];
+            return vec![text("detail.checking_build_server")];
         }
         let builds = match u.on_channel() {
             Ok(builds) => builds,
             Err(why) => {
-                let mut out = vec![row("Channel", u.channel.name()), divider()];
+                let mut out = vec![row("action.channel", u.channel.name()), divider()];
                 out.extend(wrapped(&why));
                 return out;
             }
         };
         let Some(image) = builds.get(u.at) else {
             let none = format!("no {} build to install", u.channel.name());
-            return vec![row("Channel", u.channel.name()), divider(), text(&none)];
+            return vec![row("action.channel", u.channel.name()), divider(), text(&none)];
         };
         let version = if *applying == Applying::No {
-            chevron("Version", &image.version)
+            chevron("detail.version", &image.version)
         } else {
-            row("Version", &image.version)
+            row("detail.version", &image.version)
         };
-        let mut out = vec![version, row("Channel", u.channel.name()), divider()];
+        let mut out = vec![version, row("action.channel", u.channel.name()), divider()];
         match applying {
             Applying::Fetching(so_far, total) => {
                 let got = update::megabytes(*so_far);
@@ -2212,11 +2213,11 @@ mod detail {
                     got
                 };
                 out.push(row("Downloading", &said));
-                out.push(text("Do not power off"));
+                out.push(text("detail.do_not_power_off"));
             }
             Applying::Booting => {
-                out.push(row("Starting the installer", ""));
-                out.push(text("Do not power off"));
+                out.push(row("detail.starting_installer", ""));
+                out.push(text("detail.do_not_power_off"));
             }
             Applying::Failed(e) => {
                 out.push(row("Install failed", ""));
@@ -2224,12 +2225,12 @@ mod detail {
             }
             Applying::No => {
                 if !image.revision.is_empty() {
-                    out.push(row("Commit", image.short()));
+                    out.push(row("detail.commit", image.short()));
                 }
                 if image.bytes > 0 {
-                    out.push(row("Size", &update::megabytes(image.bytes)));
+                    out.push(row("detail.size", &update::megabytes(image.bytes)));
                 }
-                out.push(text("Reboots into the installer"));
+                out.push(text("detail.reboots_into_installer"));
             }
         }
         out
@@ -2242,14 +2243,14 @@ mod detail {
             "booted" => "Booted",
             "customized" => "Customized",
             "packages" => "Packages changed",
-            "system" => "System files changed",
-            _ => "Unknown",
+            "system" => "detail.system_files_changed",
+            _ => "detail.unknown",
         }
     }
 
     fn profile_rows(p: &ProfileScreen) -> Vec<DetailRow> {
         if p.loading() {
-            return vec![text("Checking the build server...")];
+            return vec![text("detail.checking_build_server")];
         }
         let listing = match p.listing.borrow().clone() {
             Some(Ok(l)) => l,
@@ -2266,7 +2267,7 @@ mod detail {
             listing.profiles.iter().partition(|p| profile_update::updatable(&p.state));
         let mut out = Vec::new();
         for (heading, group) in [
-            ("Updated automatically", &free),
+            ("detail.updated_automatically", &free),
             (if p.forced() { "Changes dropped" } else { "Blocked" }, &held),
         ] {
             if group.is_empty() {
@@ -2288,7 +2289,7 @@ mod detail {
             Some(Step::Working(pct, step)) => {
                 out.push(row(&step, ""));
                 out.push(gauge(&format!("{pct}%"), i32::from(pct)));
-                out.push(text("Do not power off"));
+                out.push(text("detail.do_not_power_off"));
             }
             Some(Step::Done(results)) => {
                 out.push(row("Done", ""));
@@ -2310,10 +2311,10 @@ mod detail {
                 }
                 match p.offers().get(p.at) {
                     Some(offer) => {
-                        out.push(chevron("Version", &offer.number.to_string()));
+                        out.push(chevron("detail.version", &offer.number.to_string()));
                         let channel =
                             if p.forced() { offer.branch.as_str() } else { p.channel.name() };
-                        out.push(row("Channel", channel));
+                        out.push(row("action.channel", channel));
                         out.push(row("Download", &update::megabytes(offer.bytes)));
                         let going = p.going(&listing, offer);
                         let of = listing.profiles.len();
@@ -2325,7 +2326,7 @@ mod detail {
                     }
                     None if p.forced() => out.push(text("no build for these profiles")),
                     None => {
-                        out.push(row("Channel", p.channel.name()));
+                        out.push(row("action.channel", p.channel.name()));
                         let none = format!("no newer {} build", p.channel.name());
                         out.push(text(&none));
                     }
@@ -3474,7 +3475,7 @@ fn app_trail(path: &[String]) -> String {
 
 /// The manager's own name, which is also the trail over both of its screens.
 #[cfg(feature = "slint")]
-const MANAGER_TITLE: &str = "App Manager";
+const MANAGER_TITLE: &str = "menu.settings.apps";
 
 /// The trail over the manager's info page, under Settings where the manager lives.
 #[cfg(feature = "slint")]
@@ -3585,7 +3586,7 @@ fn manager_location(app: &flipper_ui::AppEntry) -> String {
     if app.shipped() {
         return "Part of the image".into();
     }
-    let mut at = String::from("Apps");
+    let mut at = String::from("menu.main.apps");
     for folder in &app.group {
         at.push('/');
         at.push_str(folder);
@@ -3621,7 +3622,7 @@ fn manager_info_rows(app: &flipper_ui::AppEntry) -> Vec<flipper_ui::ui::DetailRo
             percent: 0,
             dim: false,
         },
-        pair("Size", human_size(fp.total()), false),
+        pair("detail.size", human_size(fp.total()), false),
         pair("App", human_size(fp.file), true),
     ];
     if fp.data > 0 {
@@ -3930,7 +3931,7 @@ fn png(
                 let rows = manager_info_rows(app);
                 screen.set_detail_rows(slint::ModelRc::new(slint::VecModel::from(rows)));
                 let remove = if app.shipped() { "" } else { "Uninstall" };
-                screen.set_detail_buttons(demo::labels(&["Back", "", "", "Run", remove]));
+                screen.set_detail_buttons(demo::labels(&["action.back", "", "", "action.run", remove]));
                 screen.set_breadcrumb(manager_info_trail(app).as_str().into());
                 screen.set_screen(Screen::ManagerInfo);
             }
@@ -3968,8 +3969,8 @@ fn png(
                 screen.set_breadcrumb(
                     format!(
                         "> {} > {}",
-                        flipper_ui::strings::tr("Network"),
-                        flipper_ui::strings::tr("Ethernet")
+                        flipper_ui::strings::t("menu.main.network"),
+                        flipper_ui::strings::t("menu.network.ethernet")
                     )
                     .as_str()
                     .into(),
@@ -3994,7 +3995,7 @@ fn png(
                 screen.set_detail_qr(
                     open.qr_lines().and_then(|l| detail::qr_image(&l)).unwrap_or_default(),
                 );
-                screen.set_detail_buttons(demo::labels(&["Back", "", "", "", ""]));
+                screen.set_detail_buttons(demo::labels(&["action.back", "", "", "", ""]));
             } else {
                 screen.set_detail_buttons(demo::labels(
                     &open.buttons(&applying, select.unwrap_or(0)),
@@ -4009,8 +4010,8 @@ fn png(
             // Routing info and 5G Modem live under Network, the rest under
             // Settings, which is what the real breadcrumb derives from the stack.
             let parent = match want {
-                demo::Detail::Routing | demo::Detail::Modem | demo::Detail::Ethernet => "Network",
-                _ => "Settings",
+                demo::Detail::Routing | demo::Detail::Modem | demo::Detail::Ethernet => "menu.main.network",
+                _ => "menu.main.settings",
             };
             let leaf = match want {
                 demo::Detail::Revisions => {
@@ -4022,8 +4023,8 @@ fn png(
                 screen.set_breadcrumb(
                     format!(
                         "> {} > {}",
-                        flipper_ui::strings::tr(parent),
-                        flipper_ui::strings::tr_any(&leaf)
+                        flipper_ui::strings::t(parent),
+                        flipper_ui::strings::t(&leaf)
                     )
                     .as_str()
                     .into(),
@@ -4054,7 +4055,7 @@ fn png(
                 flipper_ui::font::wrap(&wifi::whole(stderr), DIALOG_TEXT_W, DIALOG_MAX_LINES);
             let lines: Vec<slint::SharedString> = lines.iter().map(|l| l.as_str().into()).collect();
             screen.set_modal_lines(slint::ModelRc::new(slint::VecModel::from(lines)));
-            screen.set_modal_left("Back".into());
+            screen.set_modal_left("action.back".into());
         }
         screen.set_screen(Screen::TextInput);
     }
@@ -4614,7 +4615,7 @@ fn panel(
                 eprintln!("app            {name} {why}");
                 let mut lines = vec![name];
                 lines.extend(dialog_wrap(&why.split(' ').map(str::to_string).collect::<Vec<_>>()));
-                dialog = Some(Dialog { lines, left: "Back", right: "", act: DialogAct::None });
+                dialog = Some(Dialog { lines, left: "action.back", right: "", act: DialogAct::None });
             } else if let Some(entry) = apps.get(at as usize).cloned() {
                 let (tx, rx) = std::sync::mpsc::channel();
                 let for_check = entry.clone();
@@ -4663,7 +4664,7 @@ fn panel(
                 if menu.title.is_empty() {
                 String::new()
             } else {
-                format!("> {}", flipper_ui::strings::tr(menu.title))
+                format!("> {}", flipper_ui::strings::t(menu.title))
             }
                     .as_str()
                     .into(),
@@ -5425,7 +5426,7 @@ fn panel(
                         eprintln!("usb power      not changed: {e}");
                         dialog = Some(Dialog {
                             lines: vec!["Could not change".into(), "USB-C1 power output".into()],
-                            left: "Back",
+                            left: "action.back",
                             right: "",
                             act: DialogAct::None,
                         });
@@ -5694,7 +5695,7 @@ fn panel(
                                 lines.clone(),
                                 Instant::now() + Duration::from_millis(timing::NOTICE_MS as u64),
                             ));
-                            Some(Dialog { lines, left: "Back", right: "", act: DialogAct::None })
+                            Some(Dialog { lines, left: "action.back", right: "", act: DialogAct::None })
                         }
                         Err(e) => {
                             eprintln!("apps           {name} not installed: {e}");
@@ -5702,7 +5703,7 @@ fn panel(
                                 e.split(' ').map(str::to_string).collect::<Vec<_>>();
                             let mut lines = vec![name];
                             lines.extend(dialog_wrap(&words));
-                            Some(Dialog { lines, left: "Back", right: "", act: DialogAct::None })
+                            Some(Dialog { lines, left: "action.back", right: "", act: DialogAct::None })
                         }
                     };
                 }
@@ -7192,8 +7193,8 @@ fn panel(
                         net.set_airplane(false);
                         // menu.js proceeds to the action the dialog interrupted.
                         dialog = Some(Dialog {
-                            lines: vec!["5G Modem".into(), "is not ported yet".into()],
-                            left: "Back",
+                            lines: vec!["menu.network.modem".into(), "is not ported yet".into()],
+                            left: "action.back",
                             right: "",
                             act: DialogAct::None,
                         });
@@ -7278,7 +7279,7 @@ fn panel(
                                         app.name.clone(),
                                         "is running: close it first".into(),
                                     ],
-                                    left: "Back",
+                                    left: "action.back",
                                     right: "",
                                     act: DialogAct::None,
                                 });
@@ -7324,7 +7325,7 @@ fn panel(
                                         ));
                                         dialog = Some(Dialog {
                                             lines,
-                                            left: "Back",
+                                            left: "action.back",
                                             right: "",
                                             act: DialogAct::None,
                                         });
@@ -7337,7 +7338,7 @@ fn panel(
                                         lines.extend(dialog_wrap(&words));
                                         dialog = Some(Dialog {
                                             lines,
-                                            left: "Back",
+                                            left: "action.back",
                                             right: "",
                                             act: DialogAct::None,
                                         });
@@ -7549,7 +7550,7 @@ fn panel(
                                                 "Package and system changes are dropped".into()
                                             }))
                                             .collect(),
-                                            left: "Back",
+                                            left: "action.back",
                                             right: "Update",
                                             act: DialogAct::ForceUpdate,
                                         });
@@ -7575,7 +7576,7 @@ fn panel(
                                         format!("Go back to build {kept}?"),
                                         "The current profile version will be deleted".into(),
                                     ],
-                                    left: "Back",
+                                    left: "action.back",
                                     right: "Rollback",
                                     act: DialogAct::Rollback,
                                 });
@@ -7655,12 +7656,12 @@ fn panel(
                                 lines.clone(),
                                 Instant::now() + Duration::from_millis(timing::NOTICE_MS as u64),
                             ));
-                            Dialog { lines, left: "Back", right: "", act: DialogAct::None }
+                            Dialog { lines, left: "action.back", right: "", act: DialogAct::None }
                         } else {
                             match needs(offer, &apps, offers) {
                                 Needs::Nothing => Dialog {
                                     lines: vec![offer.name.clone(), human_size(offer.size)],
-                                    left: "Back",
+                                    left: "action.back",
                                     right: "Install",
                                     act: DialogAct::Install(mgr_selected as usize),
                                 },
@@ -7670,7 +7671,7 @@ fn panel(
                                         format!("needs {}", runtime.name),
                                         human_size(offer.size + runtime.size),
                                     ],
-                                    left: "Back",
+                                    left: "action.back",
                                     right: "Install",
                                     act: DialogAct::Install(mgr_selected as usize),
                                 },
@@ -7680,7 +7681,7 @@ fn panel(
                                         format!("needs the {runtime} runtime"),
                                         "which is not on offer".into(),
                                     ],
-                                    left: "Back",
+                                    left: "action.back",
                                     right: "",
                                     act: DialogAct::None,
                                 },
@@ -7698,7 +7699,7 @@ fn panel(
                         screen.set_detail_at_start(false);
                         screen.set_detail_at_end(false);
                         let remove = if app.shipped() { "" } else { "Uninstall" };
-                        screen.set_detail_buttons(demo::labels(&["Back", "", "", "Run", remove]));
+                        screen.set_detail_buttons(demo::labels(&["action.back", "", "", "action.run", remove]));
                         screen.set_breadcrumb(manager_info_trail(app).as_str().into());
                         screen.set_screen(Screen::ManagerInfo);
                         eprintln!("screen         app manager: {}", app.name);
@@ -7734,7 +7735,7 @@ fn panel(
                     {
                         dialog = Some(Dialog {
                             lines: vec![app.name.clone(), "will be removed".into()],
-                            left: "Back",
+                            left: "action.back",
                             right: "Uninstall",
                             act: DialogAct::Uninstall(at),
                         });
@@ -7860,7 +7861,7 @@ fn panel(
                             wifi_dirty = true;
                             stack.last_mut().unwrap().1 = selected;
                             stack.last_mut().unwrap().2 = scroll;
-                            let trail = demo::crumb(&stack, "Wi-Fi");
+                            let trail = demo::crumb(&stack, "menu.network.wifi");
                             screen.set_breadcrumb(trail.as_str().into());
                             screen.set_screen(Screen::Wifi);
                             // `pressed` is shared, so a flash still running here
@@ -7905,7 +7906,7 @@ fn panel(
                         }
                         // The prototype blocks this row while airplane mode is on
                         // and offers to turn it off, rather than failing silently.
-                        demo::Act::Unported if row.label == "5G Modem" && net_now.airplane => {
+                        demo::Act::Unported if row.label == "menu.network.modem" && net_now.airplane => {
                             dialog = Some(Dialog {
                                 lines: vec![
                                     "To use 5G Modem you need".into(),
@@ -7922,7 +7923,7 @@ fn panel(
                         demo::Act::Unported => {
                             dialog = Some(Dialog {
                                 lines: vec![row.label.into(), "is not ported yet".into()],
-                                left: "Back",
+                                left: "action.back",
                                 right: "",
                                 act: DialogAct::None,
                             });
@@ -8221,11 +8222,11 @@ fn panel(
             // word: Install again, not something called Retry.
             let again = matches!(&deps, Some(Deps::Done(_, Err(_)))) && deps_missing.is_some();
             screen.set_app_buttons(demo::labels(&if done {
-                ["Back", "", "", "", "Run"]
+                ["action.back", "", "", "", "action.run"]
             } else if again {
-                ["Back", "", "", "", "Install"]
+                ["action.back", "", "", "", "Install"]
             } else {
-                ["Back", "", "", "", ""]
+                ["action.back", "", "", "", ""]
             }));
             screen.set_screen(Screen::AppLog);
         }
@@ -8267,7 +8268,7 @@ fn panel(
                 screen.set_detail_asides(open.asides());
                 screen.set_detail_offset(detail_offset);
                 screen.set_detail_buttons(demo::labels(&if detail_qr {
-                    ["Back", "", "", "", ""]
+                    ["action.back", "", "", "", ""]
                 } else {
                     open.buttons(&applying, detail_offset)
                 }));
@@ -8449,7 +8450,7 @@ fn panel(
                                             DIALOG_TEXT_W,
                                             DIALOG_MAX_LINES,
                                         ),
-                                        left: "Back",
+                                        left: "action.back",
                                         right: "",
                                         act: DialogAct::None,
                                     });
