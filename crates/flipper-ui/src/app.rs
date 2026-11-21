@@ -255,7 +255,7 @@ fn quoted(path: &Path) -> String {
 }
 
 /// The user's home, or the device's user when the environment does not say.
-pub(crate) fn home() -> PathBuf {
+pub fn home() -> PathBuf {
     std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/home/user"))
 }
 

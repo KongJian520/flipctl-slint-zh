@@ -3654,9 +3654,16 @@ fn apply_manager(
 #[cfg(feature = "slint")]
 fn manager_location(app: &flipper_ui::AppEntry) -> String {
     if app.shipped() {
-        return "Part of the image".into();
+        return flipper_ui::strings::t("text.part_of_image").into();
     }
-    let mut at = String::from("menu.main.apps");
+    // The folder the file actually sits in. This said `menu.main.apps/Runtimes` —
+    // the menu's id was the only name the folder had in scope — which is not a path
+    // and cannot be opened by anybody reading it.
+    let home = flipper_ui::app::home().display().to_string();
+    let mut at = flipper_ui::bundle::root().display().to_string();
+    if let Some(rest) = at.strip_prefix(&home) {
+        at = format!("~{rest}");
+    }
     for folder in &app.group {
         at.push('/');
         at.push_str(folder);
@@ -3670,21 +3677,23 @@ fn manager_location(app: &flipper_ui::AppEntry) -> String {
 fn manager_info_rows(app: &flipper_ui::AppEntry) -> Vec<flipper_ui::ui::DetailRow> {
     use flipper_ui::app::human_size;
     let fp = app.footprint();
+    // This page builds its DetailRows itself, so it translates them itself: an id
+    // in the label column drew as `detail.size` on the glass.
     let pair = |label: &str, value: String, dim: bool| flipper_ui::ui::DetailRow {
         kind: 0,
-        label: label.into(),
-        value: value.as_str().into(),
+        label: flipper_ui::strings::t(label).into(),
+        value: flipper_ui::strings::t(&value).into(),
         percent: 0,
         dim,
     };
     let kind = if app.runtime.is_empty() {
         "AppImage".to_string()
     } else {
-        format!("{} script", app.runtime)
+        format!("{} {}", app.runtime, flipper_ui::strings::t("text.script"))
     };
     let mut rows = vec![
-        pair("Type", kind, false),
-        pair("Location", manager_location(app), false),
+        pair("detail.type", kind, false),
+        pair("detail.location", manager_location(app), false),
         flipper_ui::ui::DetailRow {
             kind: 1,
             label: "".into(),
@@ -3693,13 +3702,13 @@ fn manager_info_rows(app: &flipper_ui::AppEntry) -> Vec<flipper_ui::ui::DetailRo
             dim: false,
         },
         pair("detail.size", human_size(fp.total()), false),
-        pair("App", human_size(fp.file), true),
+        pair("detail.app", human_size(fp.file), true),
     ];
     if fp.data > 0 {
-        rows.push(pair("Data", human_size(fp.data), true));
+        rows.push(pair("detail.data", human_size(fp.data), true));
     }
     if fp.cache > 0 {
-        rows.push(pair("Cache", human_size(fp.cache), true));
+        rows.push(pair("detail.cache", human_size(fp.cache), true));
     }
     rows
 }
@@ -4003,7 +4012,7 @@ fn png(
             if let Some(app) = apps.get(at) {
                 let rows = manager_info_rows(app);
                 screen.set_detail_rows(slint::ModelRc::new(slint::VecModel::from(rows)));
-                let remove = if app.shipped() { "" } else { "Uninstall" };
+                let remove = if app.shipped() { "" } else { "action.uninstall" };
                 screen.set_detail_buttons(demo::labels(&["action.back", "", "", "action.run", remove]));
                 screen.set_breadcrumb(manager_info_trail(app).as_str().into());
                 screen.set_screen(Screen::ManagerInfo);
@@ -7771,7 +7780,7 @@ fn panel(
                         screen.set_detail_offset(0);
                         screen.set_detail_at_start(false);
                         screen.set_detail_at_end(false);
-                        let remove = if app.shipped() { "" } else { "Uninstall" };
+                        let remove = if app.shipped() { "" } else { "action.uninstall" };
                         screen.set_detail_buttons(demo::labels(&["action.back", "", "", "action.run", remove]));
                         screen.set_breadcrumb(manager_info_trail(app).as_str().into());
                         screen.set_screen(Screen::ManagerInfo);
@@ -7809,7 +7818,7 @@ fn panel(
                         dialog = Some(Dialog {
                             lines: vec![app.name.clone(), "will be removed".into()],
                             left: "action.back",
-                            right: "Uninstall",
+                            right: "action.uninstall",
                             act: DialogAct::Uninstall(at),
                         });
                     }
