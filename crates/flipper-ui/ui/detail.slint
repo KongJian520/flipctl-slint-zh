@@ -99,7 +99,7 @@ export component DetailBody inherits Rectangle {
         y: FlipperTheme.breadcrumb_y;
         text: root.breadcrumb;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.divider;
     }
 
@@ -122,7 +122,7 @@ export component DetailBody inherits Rectangle {
         measure := Text {
             text: row.label;
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             visible: false;
         }
         property <length> label_w: row.label == "" ? 0 : measure.width - 1px;
@@ -136,7 +136,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: row.label;
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             color: parent.ink;
         }
 
@@ -146,7 +146,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: row.label;
             font-size: 16px;
-            font-family: "Born2bSportyV2";
+            font-family: "FlipCTL RowActive";
             color: parent.ink;
         }
 
@@ -157,7 +157,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: row.value;
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             color: parent.ink;
         }
         // A cell on one line, right-aligned against the right column.
@@ -167,7 +167,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: row.value;
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             color: parent.ink;
         }
         // And its right column, right-aligned on the margin.
@@ -176,7 +176,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: root.asides[i];
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             color: parent.ink;
         }
 
@@ -187,7 +187,7 @@ export component DetailBody inherits Rectangle {
             y: 0;
             text: row.value;
             font-size: 16px;
-            font-family: "Busy9px";
+            font-family: "FlipCTL Row";
             color: parent.ink;
         }
 

@@ -88,11 +88,11 @@ component EthCard inherits Rectangle {
     // ── Grey pill behind the top-right cluster ─────────────────────────────
     // Measured from the cluster, so it is exactly as wide as its contents plus
     // 5px of left padding.
-    speed_ref := Text { visible: false; text: root.link.speed; font-size: 16px; font-family: "HaxrCorp 4090"; }
-    rx_ref := Text { visible: false; text: root.link.rx; font-size: 16px; font-family: "HaxrCorp 4090"; }
-    tx_ref := Text { visible: false; text: root.link.tx; font-size: 16px; font-family: "HaxrCorp 4090"; }
-    disc_ref := Text { visible: false; text: "Disconnected"; font-size: 16px; font-family: "HaxrCorp 4090"; }
-    name_ref := Text { visible: false; text: root.link.name; font-size: 16px; font-family: "Born2bSportyV2"; }
+    speed_ref := Text { visible: false; text: root.link.speed; font-size: 16px; font-family: "FlipCTL Title"; }
+    rx_ref := Text { visible: false; text: root.link.rx; font-size: 16px; font-family: "FlipCTL Title"; }
+    tx_ref := Text { visible: false; text: root.link.tx; font-size: 16px; font-family: "FlipCTL Title"; }
+    disc_ref := Text { visible: false; text: "Disconnected"; font-size: 16px; font-family: "FlipCTL Title"; }
+    name_ref := Text { visible: false; text: root.link.name; font-size: 16px; font-family: "FlipCTL RowActive"; }
 
     property <length> right_edge: root.width - FlipperTheme.eth_status_pad_r;
     property <length> arrow_w: 5px;
@@ -129,7 +129,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_name_draw_y;
         text: root.link.name;
         font-size: 16px;
-        font-family: "Born2bSportyV2";
+        font-family: "FlipCTL RowActive";
         color: root.fg;
     }
 
@@ -140,7 +140,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_info_draw_y + 2px;
         text: root.link.ipv4;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -150,7 +150,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_info_draw_y;
         text: "Disconnected";
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -159,7 +159,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_info_draw_y;
         text: root.link.speed;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -178,7 +178,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_info_draw_y;
         text: root.link.tx;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
     if root.link.connected && root.link.rx != "": Image {
@@ -194,7 +194,7 @@ component EthCard inherits Rectangle {
         y: FlipperTheme.eth_info_draw_y;
         text: root.link.rx;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -207,7 +207,7 @@ component EthCard inherits Rectangle {
         y: root.bottom_y;
         text: root.link.ipv6;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
     if root.link.connected && root.link.method != "": Text {
@@ -215,7 +215,7 @@ component EthCard inherits Rectangle {
         y: root.bottom_y;
         text: root.link.method;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -301,7 +301,7 @@ component EthDetail inherits Rectangle {
                 y: -2px;
                 text: row.label;
                 font-size: 16px;
-                font-family: "Born2bSportyV2";
+                font-family: "FlipCTL RowActive";
                 color: FlipperTheme.black;
             }
 
@@ -311,7 +311,7 @@ component EthDetail inherits Rectangle {
                 y: 0;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: FlipperTheme.field_label;
             }
             if row.kind == 2: Text {
@@ -319,14 +319,14 @@ component EthDetail inherits Rectangle {
                 y: 0;
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: FlipperTheme.black;
             }
             label_ref := Text {
                 visible: false;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
             }
 
             // Section label for a list with more than one entry.
@@ -335,7 +335,7 @@ component EthDetail inherits Rectangle {
                 y: 0;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: FlipperTheme.field_label;
             }
 
@@ -345,7 +345,7 @@ component EthDetail inherits Rectangle {
                 y: 0;
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: FlipperTheme.black;
             }
 
@@ -358,8 +358,8 @@ component EthDetail inherits Rectangle {
                 width: root.row_right - root.row_x;
                 height: parent.height;
 
-                m_speed := Text { visible: false; text: row.speed; font-size: 16px; font-family: "HaxrCorp 4090"; }
-                m_rx := Text { visible: false; text: row.rx; font-size: 16px; font-family: "HaxrCorp 4090"; }
+                m_speed := Text { visible: false; text: row.speed; font-size: 16px; font-family: "FlipCTL Title"; }
+                m_rx := Text { visible: false; text: row.rx; font-size: 16px; font-family: "FlipCTL Title"; }
 
                 property <length> after_speed: row.speed == ""
                     ? 0px
@@ -374,7 +374,7 @@ component EthDetail inherits Rectangle {
                     x: 0; y: 0;
                     text: row.speed;
                     font-size: 16px;
-                    font-family: "HaxrCorp 4090";
+                    font-family: "FlipCTL Title";
                     color: FlipperTheme.black;
                 }
                 if row.rx != "": Image {
@@ -388,7 +388,7 @@ component EthDetail inherits Rectangle {
                     x: parent.rx_text_x; y: 0;
                     text: row.rx;
                     font-size: 16px;
-                    font-family: "HaxrCorp 4090";
+                    font-family: "FlipCTL Title";
                     color: FlipperTheme.black;
                 }
                 if row.tx != "": Image {
@@ -402,7 +402,7 @@ component EthDetail inherits Rectangle {
                     x: parent.tx_text_x; y: 0;
                     text: row.tx;
                     font-size: 16px;
-                    font-family: "HaxrCorp 4090";
+                    font-family: "FlipCTL Title";
                     color: FlipperTheme.black;
                 }
             }
@@ -474,7 +474,7 @@ export component EthernetBody inherits Rectangle {
         y: FlipperTheme.breadcrumb_y;
         text: root.breadcrumb;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.divider;
     }
 

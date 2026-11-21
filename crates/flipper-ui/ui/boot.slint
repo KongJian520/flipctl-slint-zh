@@ -9,7 +9,7 @@
 //     countdown, and the text inverts to white where the fill has reached it, so
 //     one line of text is drawn twice and clipped rather than being moved.
 //   * Rows are one font in every state. A boot menu row does not swap to
-//     Born2bSportyV2 when selected, because the shift in baseline reads as the row
+//     FlipCTL RowActive when selected, because the shift in baseline reads as the row
 //     jumping, and here the rows are close enough together to notice.
 import { FlipperTheme } from "@theme";
 import { SelectorFrame, SoftBar, Scrollbar } from "frame.slint";
@@ -273,7 +273,7 @@ component BootPopup inherits Rectangle {
         y: root.frame_y + FlipperTheme.popup_icon_y;
         text: root.title;
         font-size: 16px;
-        font-family: "Born2bSportyV2";
+        font-family: "FlipCTL RowActive";
         color: FlipperTheme.black;
     }
 
@@ -496,7 +496,7 @@ export component BootBody inherits Rectangle {
         y: FlipperTheme.boot_title_y;
         text: root.heading;
         font-size: 16px;
-        font-family: "Born2bSportyV2";
+        font-family: "FlipCTL RowActive";
         color: FlipperTheme.black;
     }
     auto := Text {
@@ -520,7 +520,7 @@ export component BootBody inherits Rectangle {
             y: FlipperTheme.boot_title_y;
             text: title.text;
             font-size: 16px;
-            font-family: "Born2bSportyV2";
+            font-family: "FlipCTL RowActive";
             color: FlipperTheme.white;
         }
         Text {

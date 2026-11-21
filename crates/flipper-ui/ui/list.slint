@@ -56,7 +56,7 @@ export struct ListItem {
 // unfocused row collapses to the bare value, right-aligned like any other status.
 export component ChevronStatus inherits Rectangle {
     in property <string> value;
-    // 0 a list row's own face, 1 the title face. The menu's rows are Busy9px; the
+    // 0 a list row's own face, 1 the title face. The menu's rows are FlipCTL Row; the
     // Wi-Fi page draws the same "< ON >" in HaxrCorp because none of its rows
     // swap face on selection.
     in property <int> face: 0;
@@ -78,10 +78,10 @@ export component ChevronStatus inherits Rectangle {
     // Widths the prototype takes from the font tables. Slint has no text-measuring
     // function, so the measurement is a hidden Text of the same string in the same
     // font, less the one pixel by which Slint's width exceeds textWidth().
-    lt_ref := Text { visible: false; text: "<"; font-size: 16px; font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px"; }
-    gt_ref := Text { visible: false; text: ">"; font-size: 16px; font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px"; }
-    off_ref := Text { visible: false; text: "OFF"; font-size: 16px; font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px"; }
-    value_ref := Text { visible: false; text: root.value; font-size: 16px; font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px"; }
+    lt_ref := Text { visible: false; text: "<"; font-size: 16px; font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row"; }
+    gt_ref := Text { visible: false; text: ">"; font-size: 16px; font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row"; }
+    off_ref := Text { visible: false; text: "OFF"; font-size: 16px; font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row"; }
+    value_ref := Text { visible: false; text: root.value; font-size: 16px; font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row"; }
 
     property <length> lt_w: lt_ref.width - 1px;
     property <length> gt_w: gt_ref.width - 1px;
@@ -106,7 +106,7 @@ export component ChevronStatus inherits Rectangle {
         y: root.text_y;
         text: "<";
         font-size: 16px;
-        font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px";
+        font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row";
         color: root.arrow_pressed == 1 ? FlipperTheme.chevron_flash : root.ink;
     }
 
@@ -115,7 +115,7 @@ export component ChevronStatus inherits Rectangle {
         y: root.text_y;
         text: root.value;
         font-size: 16px;
-        font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px";
+        font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row";
         color: root.ink;
     }
 
@@ -124,7 +124,7 @@ export component ChevronStatus inherits Rectangle {
         y: root.text_y;
         text: ">";
         font-size: 16px;
-        font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px";
+        font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row";
         color: root.arrow_pressed == 2 ? FlipperTheme.chevron_flash : root.ink;
     }
 
@@ -133,7 +133,7 @@ export component ChevronStatus inherits Rectangle {
         y: root.text_y;
         text: root.value;
         font-size: 16px;
-        font-family: root.face == 1 ? "HaxrCorp 4090" : "Busy9px";
+        font-family: root.face == 1 ? "FlipCTL Title" : "FlipCTL Row";
         color: root.ink;
     }
 }
@@ -144,8 +144,8 @@ export component ChevronStatus inherits Rectangle {
 // Transcribed from component-library/MenuLine.js. Two details there are easy to
 // miss and both were wrong here first time round:
 //
-//   * the status text never changes font. The label swaps Busy9px for
-//     Born2bSportyV2 when the row is active; the status stays on Busy9px so the
+//   * the status text never changes font. The label swaps FlipCTL Row for
+//     FlipCTL RowActive when the row is active; the status stays on FlipCTL Row so the
 //     row's right-hand information keeps the same weight in every state, and only
 //     its colour changes.
 //   * the active label sits one pixel higher. Born2bSporty's caps read high
@@ -226,7 +226,7 @@ component MenuLine inherits Rectangle {
             : FlipperTheme.text_draw_y;
         text: root.label;
         font-size: 16px;
-        font-family: root.active ? "Born2bSportyV2" : "Busy9px";
+        font-family: root.active ? "FlipCTL RowActive" : "FlipCTL Row";
         color: root.content;
     }
 
@@ -234,14 +234,14 @@ component MenuLine inherits Rectangle {
     // the label swaps face when it is active and the tag has to follow it. Held back
     // by one, as every measurement here is; see statusbar.slint.
     //
-    // It keeps Busy9px and the status tone whatever the row is doing, for the reason
+    // It keeps FlipCTL Row and the status tone whatever the row is doing, for the reason
     // the status does: it is an aside about the row, not part of what the row says.
     if root.tag != "": Text {
         x: label_ref.x + (label_ref.width - 1px) + FlipperTheme.label_tag_gap;
         y: FlipperTheme.text_draw_y;
         text: root.tag;
         font-size: 16px;
-        font-family: "Busy9px";
+        font-family: "FlipCTL Row";
         color: root.pressed ? FlipperTheme.white : FlipperTheme.status_dim;
     }
 
@@ -252,7 +252,7 @@ component MenuLine inherits Rectangle {
         y: FlipperTheme.text_draw_y;
         text: root.status;
         font-size: 16px;
-        font-family: "Busy9px";
+        font-family: "FlipCTL Row";
         color: root.status_color;
     }
 
@@ -342,7 +342,7 @@ export component MenuBody inherits Rectangle {
         y: FlipperTheme.breadcrumb_y;
         text: root.breadcrumb;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.divider;
     }
 

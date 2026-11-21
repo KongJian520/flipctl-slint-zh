@@ -10,15 +10,16 @@
 // They are pixel fonts on a 64-unit design-pixel grid at 1024 units/em, so they
 // rasterise with zero partial coverage at 16px and only at 16px. Font size is
 // therefore never a free parameter.
-import "../../../third_party/flipctl-fonts/HaxrCorp4090-FlipCTL/HaxrCorp4090-FlipCTL.ttf";
-import "../../../third_party/flipctl-fonts/Busy9px-FlipCTL/Busy9px-FlipCTL.ttf";
-import "../../../third_party/flipctl-fonts/Born2bSportyV2-FlipCTL/Born2bSportyV2-FlipCTL.ttf";
+
+import "../../../third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-Title.ttf";
+import "../../../third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-Row.ttf";
+import "../../../third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-RowActive.ttf";
 
 // The family names, which are the only thing a `font-family` may be set to: the
-// full name ("HaxrCorp 4090 FlipCTL") does not resolve, and getting it wrong shows
+// full name ("FlipCTL Title FlipCTL") does not resolve, and getting it wrong shows
 // as a fallback font rather than as an error.
 export global PanelFonts {
-    out property <string> title: "HaxrCorp 4090";
-    out property <string> row: "Busy9px";
-    out property <string> row_active: "Born2bSportyV2";
+    out property <string> title: "FlipCTL Title";
+    out property <string> row: "FlipCTL Row";
+    out property <string> row_active: "FlipCTL RowActive";
 }

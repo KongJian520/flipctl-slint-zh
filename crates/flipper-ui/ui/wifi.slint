@@ -227,7 +227,7 @@ component ModalChrome inherits Rectangle {
             visible: false;
             text: root.toast;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
         }
         property <length> pill_w: (toast_ref.width - 1px) + 2 * FlipperTheme.wifi_toast_pad;
 
@@ -253,7 +253,7 @@ component ModalChrome inherits Rectangle {
             y: Math.floor((parent.height - FlipperTheme.kb_text_ink_h) / 2 / 1px) * 1px;
             text: root.toast;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
             color: FlipperTheme.white;
         }
     }
@@ -343,7 +343,7 @@ component WifiListModal inherits Rectangle {
                 : root.inner_top - root.clip_y + FlipperTheme.wifi_placeholder_dy;
             text: root.placeholder;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
             color: FlipperTheme.disabled_fg;
         }
 
@@ -391,7 +391,7 @@ component WifiListModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.security;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.dim_ink;
             }
 
@@ -400,7 +400,7 @@ component WifiListModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.text;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.ink;
             }
 
@@ -527,7 +527,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.ink;
             }
 
@@ -552,7 +552,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy + (row.nudge ? 2px : 0);
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.value_ink;
             }
 
@@ -562,7 +562,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.label_ink;
             }
             if row.kind == 3: Text {
@@ -570,14 +570,14 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.ink;
             }
             kv_ref := Text {
                 visible: false;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
             }
 
             // A section label over a list of values, and one of those values.
@@ -586,7 +586,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.label;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.label_ink;
             }
             if row.kind == 5: Text {
@@ -594,7 +594,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: parent.ink;
             }
 
@@ -603,7 +603,7 @@ component WifiDetailModal inherits Rectangle {
                 y: FlipperTheme.wifi_text_dy;
                 text: row.value;
                 font-size: 16px;
-                font-family: "HaxrCorp 4090";
+                font-family: "FlipCTL Title";
                 color: FlipperTheme.disabled_fg;
             }
         }
@@ -694,7 +694,7 @@ export component WifiBody inherits Rectangle {
         y: FlipperTheme.breadcrumb_y;
         text: root.breadcrumb;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.divider;
     }
 
@@ -718,7 +718,7 @@ export component WifiBody inherits Rectangle {
             y: FlipperTheme.wifi_text_dy;
             text: row.text;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
             color: FlipperTheme.black;
         }
 
@@ -729,7 +729,7 @@ export component WifiBody inherits Rectangle {
             y: FlipperTheme.wifi_text_dy;
             text: row.value;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
             color: FlipperTheme.disabled_fg;
         }
         if row.kind == 3: Text {
@@ -737,7 +737,7 @@ export component WifiBody inherits Rectangle {
             y: FlipperTheme.wifi_text_dy;
             text: row.text;
             font-size: 16px;
-            font-family: "HaxrCorp 4090";
+            font-family: "FlipCTL Title";
             color: FlipperTheme.black;
         }
 

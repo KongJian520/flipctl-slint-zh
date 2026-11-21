@@ -79,7 +79,7 @@ export component CardChevron inherits Rectangle {
         y: Math.floor((root.frame_h - 7px) / 2 / 1px) * 1px - 2px;
         text: ">";
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.white;
     }
 }
@@ -191,7 +191,7 @@ export component Card inherits Rectangle {
         visible: false;
         text: root.item.right;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
     }
     // A card that can be opened keeps the drill-in bar's width clear, whether or
     // not it is the selected one: reserving it only while selected would slide the
@@ -221,7 +221,7 @@ export component Card inherits Rectangle {
         y: root.item.info == "" ? FlipperTheme.card_name_y_alone : FlipperTheme.card_name_y;
         text: root.item.name;
         font-size: 16px;
-        font-family: "Born2bSportyV2";
+        font-family: "FlipCTL RowActive";
         color: root.fg;
     }
 
@@ -230,7 +230,7 @@ export component Card inherits Rectangle {
         y: FlipperTheme.card_info_y;
         text: root.item.info;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -239,7 +239,7 @@ export component Card inherits Rectangle {
         y: FlipperTheme.card_right_y;
         text: root.item.right;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: root.fg;
     }
 
@@ -315,7 +315,7 @@ export component CardsBody inherits Rectangle {
         y: FlipperTheme.status_bar_h;
         text: root.title;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.black;
     }
     if root.note != "": Text {
@@ -323,7 +323,7 @@ export component CardsBody inherits Rectangle {
         y: FlipperTheme.status_bar_h;
         text: root.note;
         font-size: 16px;
-        font-family: "HaxrCorp 4090";
+        font-family: "FlipCTL Title";
         color: FlipperTheme.black;
     }
     Rectangle {

@@ -41,7 +41,7 @@ fn compile_slint(theme: &std::path::Path) {
     libs.insert("theme".to_string(), theme.to_path_buf());
 
     let config = slint_build::CompilerConfiguration::new()
-        .embed_resources(slint_build::EmbedResourcesKind::EmbedForSoftwareRenderer)
+        .embed_resources(slint_build::EmbedResourcesKind::EmbedFiles)
         .with_library_paths(libs);
 
     slint_build::compile_with_config("ui/screens.slint", config).expect("compile ui/screens.slint");
