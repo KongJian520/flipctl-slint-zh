@@ -7974,6 +7974,10 @@ fn panel(
                             let next = &locales[(at + 1) % locales.len()];
                             flipper_ui::strings::set_locale(next.id);
                             save_language(next.id);
+                            // Every label on this screen was built in the language it
+                            // was applied in, so applying it again is what makes the
+                            // switch visible without leaving and coming back.
+                            demo::apply_menu(&screen, stack.last().unwrap().0, &net_now);
                         }
                         demo::Act::UsbPower => {
                             if let Some(port) = flipper_ui::usb_pd::Port::read() {
