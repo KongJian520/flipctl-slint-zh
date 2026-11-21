@@ -91,6 +91,35 @@ precedence = "override"
 SPDX-FileCopyrightText = "2026 Flipper Devices Inc.; Busy9px by Yana Odobesku and Lunev Mikhail"
 SPDX-License-Identifier = "MIT"
 
+# The three generated faces: each original's Latin glyphs plus Fusion Pixel's CJK.
+# Fusion Pixel (TakWolf) is OFL-1.1, whose reserved names are not used here — the
+# families are FlipCTL Title/Row/RowActive — and the license text is in
+# LICENSES/OFL-1.1.txt. The Latin half keeps its own terms, which is why the title
+# face is ShareAlike as well and the row face carries Busy9px's MIT.
+[[annotations]]
+path = ["third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-Title.ttf"]
+precedence = "override"
+SPDX-FileCopyrightText = "2009 sahwar; 2022 TakWolf (Fusion Pixel); 2026 Flipper Devices Inc."
+SPDX-License-Identifier = "OFL-1.1 AND CC-BY-SA-3.0"
+
+[[annotations]]
+path = ["third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-Row.ttf"]
+precedence = "override"
+SPDX-FileCopyrightText = "2022 TakWolf (Fusion Pixel); 2026 Flipper Devices Inc.; Busy9px by Yana Odobesku and Lunev Mikhail"
+SPDX-License-Identifier = "OFL-1.1 AND MIT"
+
+[[annotations]]
+path = ["third_party/flipctl-fonts/FlipCTL-CJK/FlipCTL-RowActive.ttf"]
+precedence = "override"
+SPDX-FileCopyrightText = "2022 TakWolf (Fusion Pixel); 2026 Flipper Devices Inc."
+SPDX-License-Identifier = "OFL-1.1"
+
+[[annotations]]
+path = ["third_party/flipctl-fonts/FlipCTL-CJK/README.md", "tools/font/build-cjk.py"]
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Flipper Devices Inc."
+SPDX-License-Identifier = "MIT"
+
 # Born2bSportyV2: public domain upstream, and the FlipCTL glyphs with it. A menu
 # row that is selected or pressed is set in it.
 [[annotations]]
