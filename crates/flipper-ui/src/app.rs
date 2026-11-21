@@ -260,7 +260,7 @@ pub(crate) fn home() -> PathBuf {
 }
 
 /// An XDG base directory: the variable, else its documented default under home.
-pub(crate) fn xdg_home(var: &str, fallback: &str) -> PathBuf {
+pub fn xdg_home(var: &str, fallback: &str) -> PathBuf {
     std::env::var_os(var)
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)

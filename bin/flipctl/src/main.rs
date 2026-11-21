@@ -10,13 +10,44 @@
 
 use std::process::ExitCode;
 
+/// Where the chosen language is remembered.
+///
+/// `~/.config/flipctl/lang` rather than `/etc`: the unit runs as `user`, so /etc is
+/// not ours to write, and /home is the one subvolume every profile shares — the
+/// choice survives a factory reset and follows the person, not the profile.
+fn language_path() -> std::path::PathBuf {
+    flipper_ui::app::xdg_home("XDG_CONFIG_HOME", ".config").join("flipctl/lang")
+}
+
+/// Remember `id` as the language to start in. A failure is logged and not fatal: the
+/// panel is already drawing that language, and losing the preference is not worth a
+/// dialog in front of it.
+fn save_language(id: &str) {
+    let path = language_path();
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Err(e) = std::fs::write(&path, format!("{id}\n")) {
+        eprintln!("language       not remembered: {e}");
+    }
+}
+
+fn load_language() -> Option<String> {
+    let text = std::fs::read_to_string(language_path()).ok()?;
+    let id = text.trim();
+    (!id.is_empty()).then(|| id.to_string())
+}
+
 fn main() -> ExitCode {
     // The panel's language, from the environment for now. The Settings row that will
     // write it and re-apply the current screen is the next step; until then a restart
     // with FLIPCTL_LANG=en is how the other language is seen.
-    if let Ok(id) = std::env::var("FLIPCTL_LANG") {
+    // The environment wins, then what the Settings row last wrote, then the build's
+    // default. The environment stays because it is how a translated screenshot gets
+    // taken without changing what the device will do next time.
+    if let Some(id) = std::env::var("FLIPCTL_LANG").ok().or_else(load_language) {
         if !flipper_ui::strings::set_locale(&id) {
-            eprintln!("FLIPCTL_LANG={id} is not a locale in this build");
+            eprintln!("language       `{id}` is not a locale in this build");
         }
     }
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -354,6 +385,8 @@ mod demo {
         UsbPower,
         /// One LED group's brightness, which left and right step.
         Led(Group),
+        /// Step to the next language the build carries, and remember it.
+        Language,
         /// Hand the panel to the flipctl2 prototype: stop this build, start the
         /// browser that draws that one. There is no way back from the panel,
         /// which is what makes it a testing row rather than a menu entry.
@@ -418,6 +451,8 @@ mod demo {
         UsbPower,
         /// An LED group's brightness, between chevrons.
         Led(Group),
+        /// The panel's language, between chevrons: the locale's own name.
+        Language,
     }
 
     pub struct Row {
@@ -477,6 +512,7 @@ mod demo {
         title: "menu.main.settings",
         rows: &[
             Row { label: "menu.settings.system", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::System) },
+            Row { label: "menu.settings.language", icon: 0, frames: 1, stat: Stat::Language, act: Act::Language },
             Row { label: "menu.settings.battery", icon: 0, frames: 1, stat: Stat::None, act: Act::Detail(Detail::Battery) },
             Row { label: "menu.settings.usbc1", icon: 0, frames: 1, stat: Stat::UsbPower, act: Act::UsbPower },
             Row { label: "menu.settings.led", icon: 0, frames: 1, stat: Stat::None, act: Act::Sub(&LEDS) },
@@ -555,6 +591,7 @@ mod demo {
                 .filter(|p| p.powering())
                 .and_then(|p| p.sets.get(p.selected).map(|s| s.short()))
                 .unwrap_or_default(),
+            Stat::Language => format!("< {} >", flipper_ui::strings::locale().name),
             Stat::Led(group) => flipper_ui::leds::read(*group)
                 .map(|v| format!("< {} >", flipper_ui::leds::label(v)))
                 .unwrap_or_default(),
@@ -7928,13 +7965,23 @@ fn panel(
                                 act: DialogAct::None,
                             });
                         }
+                        demo::Act::Language => {
+                            let locales = flipper_ui::strings::locales();
+                            let at = locales
+                                .iter()
+                                .position(|l| l.id == flipper_ui::strings::locale().id)
+                                .unwrap_or(0);
+                            let next = &locales[(at + 1) % locales.len()];
+                            flipper_ui::strings::set_locale(next.id);
+                            save_language(next.id);
+                        }
                         demo::Act::UsbPower => {
                             if let Some(port) = flipper_ui::usb_pd::Port::read() {
                                 ask_usb_power!(port);
                             }
                         }
                         // No factory in the prototype either.
-                        demo::Act::Nothing | demo::Act::Airplane | demo::Act::Led(_) => {}
+                        demo::Act::Nothing | demo::Act::Airplane | demo::Act::Led(_) | demo::Act::Language => {}
                     }
                 }
             }
