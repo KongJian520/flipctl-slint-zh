@@ -159,6 +159,13 @@ export component IdleBody inherits Rectangle {
     in property <int> battery_temp: -32768;
     in property <int> cpu_temp: -32768;
     in property <int> power_mw: -32768;
+    // The captions. Properties rather than literals for the same reason every other
+    // word on the panel is: this file does not know what language it is being read
+    // in, and the binary is where that is decided.
+    in property <string> label_temperature: "Temperature";
+    in property <string> label_power_flow: "Power flow";
+    in property <string> label_profile: "Profile:";
+    in property <string> label_hostname: "Hostname:";
     in property <string> hostname;
     in property <string> profile;
     in property <[IdleLine]> links;
@@ -219,7 +226,7 @@ export component IdleBody inherits Rectangle {
     property <bool> has_battery: root.battery >= 0;
     Text {
         x: FlipperTheme.temp_label_x; y: root.bar + 3px;
-        text: "Temperature";
+        text: root.label_temperature;
         color: FlipperTheme.field_label;
     }
     if root.has_battery: Image {
@@ -258,7 +265,7 @@ export component IdleBody inherits Rectangle {
     // reading ends, so the gap holds however wide the number is.
     Text {
         x: FlipperTheme.power_label_x; y: root.bar + 3px;
-        text: "Power flow";
+        text: root.label_power_flow;
         color: FlipperTheme.field_label;
     }
     // Fixed, not derived from the reading's width: see tokens.toml. A digit-width
@@ -290,12 +297,12 @@ export component IdleBody inherits Rectangle {
     // Profile and hostname rows, each a centred label/value pair.
     if root.has_profile: CentredPair {
         x: 0; y: root.bar + 36px; width: parent.width;
-        label: "Profile:";
+        label: root.label_profile;
         value: root.profile;
     }
     CentredPair {
         x: 0; y: root.bar + 49px - root.lift; width: parent.width;
-        label: "Hostname:";
+        label: root.label_hostname;
         value: root.hostname;
         label_dy: 1px;
         value_dy: 1px;

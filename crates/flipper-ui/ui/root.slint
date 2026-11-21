@@ -231,6 +231,11 @@ export component Root inherits Window {
     in property <bool> choice_has_backdrop;
     in property <int> choice_pressed_slot: -1;
 
+    in property <string> idle_label_temperature;
+    in property <string> idle_label_power_flow;
+    in property <string> idle_label_profile;
+    in property <string> idle_label_hostname;
+
     idle := IdleBody {
         visible: root.screen == Screen.idle;
         battery: root.battery;
@@ -244,6 +249,10 @@ export component Root inherits Window {
         battery_temp: root.battery_temp;
         cpu_temp: root.cpu_temp;
         power_mw: root.power_mw;
+        label_temperature: root.idle_label_temperature;
+        label_power_flow: root.idle_label_power_flow;
+        label_profile: root.idle_label_profile;
+        label_hostname: root.idle_label_hostname;
         hostname: root.hostname;
         profile: root.profile;
         has_profile: root.has_profile;

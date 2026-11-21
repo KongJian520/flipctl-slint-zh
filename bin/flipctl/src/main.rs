@@ -214,8 +214,14 @@ mod demo {
     use flipper_ui::ui::{ListItem, Root};
 
     pub fn labels(list: &[&str]) -> slint::ModelRc<slint::SharedString> {
+        // Every soft-key strip in the panel comes through here, so an id in one of
+        // the label arrays below is translated once, at the boundary, and a label
+        // that is a value rather than an id (a channel name, an app's own words)
+        // comes back as itself.
         slint::ModelRc::new(slint::VecModel::from(
-            list.iter().map(|s| slint::SharedString::from(*s)).collect::<Vec<_>>(),
+            list.iter()
+                .map(|s| slint::SharedString::from(flipper_ui::strings::t(s)))
+                .collect::<Vec<_>>(),
         ))
     }
 
@@ -226,6 +232,11 @@ mod demo {
         apply_menu(&screen, &MAIN, &flipper_ui::net::Net::default());
         screen.set_real_frame(true);
         screen.set_idle_buttons(labels(&IDLE_LABELS));
+        // The idle screen's captions, once: nothing about them changes at runtime.
+        screen.set_idle_label_temperature(flipper_ui::strings::t("idle.temperature").into());
+        screen.set_idle_label_power_flow(flipper_ui::strings::t("idle.power_flow").into());
+        screen.set_idle_label_profile(flipper_ui::strings::t("idle.profile").into());
+        screen.set_idle_label_hostname(flipper_ui::strings::t("idle.hostname").into());
         screen.set_menu_buttons(labels(&SOFT_LABELS));
         screen
     }
@@ -348,7 +359,7 @@ mod demo {
 
     /// The idle screen's soft keys. desktop.js puts "Menu" in slot 1, whose key is
     /// `view`, and the boot target's shortcut on the right in slot 4, `run`.
-    pub const IDLE_LABELS: [&str; 5] = ["", "Menu", "", "", "Desktop"];
+    pub const IDLE_LABELS: [&str; 5] = ["", "idle.menu", "", "", "idle.desktop"];
 
     /// What activating a row does.
     ///
