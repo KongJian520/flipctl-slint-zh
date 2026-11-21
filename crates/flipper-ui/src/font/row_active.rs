@@ -5,6 +5,7 @@ pub const ROW_ACTIVE: BitmapFont = BitmapFont {
     rows: 18,
     cols: 16,
     first: 32,
+    wide: 12,
     glyphs: &ROW_ACTIVE_GLYPHS,
 };
 

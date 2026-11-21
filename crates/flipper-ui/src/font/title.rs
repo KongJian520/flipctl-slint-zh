@@ -5,6 +5,7 @@ pub const TITLE: BitmapFont = BitmapFont {
     rows: 13,
     cols: 16,
     first: 32,
+    wide: 10,
     glyphs: &TITLE_GLYPHS,
 };
 

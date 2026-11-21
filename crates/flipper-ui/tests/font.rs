@@ -112,6 +112,9 @@ fn titles_are_transliterated_and_keep_their_case() {
 
 /// Whatever goes in, what comes out is drawable: that is the whole promise, and
 /// the status bar's and the Wi-Fi page's strings come from the outside world too.
+///
+/// "Drawable" now means printable ASCII or a wide character: the faces carry CJK, so
+/// a Chinese SSID passes through instead of turning into question marks.
 #[test]
 fn everything_it_returns_can_be_drawn() {
     let awkward = [
@@ -125,13 +128,13 @@ fn everything_it_returns_can_be_drawn() {
     for text in awkward {
         let drawn = flipper_ui::font::ascii(text);
         assert!(
-            drawn.chars().all(|c| (' '..='~').contains(&c)),
+            drawn.chars().all(|c| (' '..='~').contains(&c) || flipper_ui::font::is_wide(c)),
             "{text:?} became {drawn:?}, which the fonts cannot draw"
         );
         // And what cannot be transliterated is marked rather than dropped, so a
         // line does not silently lose half its words.
         if text.contains('日') {
-            assert_eq!(drawn, "???");
+            assert_eq!(drawn, "日本語", "a wide string is drawn as it arrives");
         }
     }
 }

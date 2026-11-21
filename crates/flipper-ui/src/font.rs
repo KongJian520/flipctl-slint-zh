@@ -22,12 +22,43 @@ pub struct BitmapFont {
     pub cols: u8,
     /// Codepoint of `glyphs[0]`.
     pub first: u8,
+    /// Advance of one wide character in this face, in pixels. The title face draws
+    /// Fusion Pixel's 10px CJK (10), the two row faces its 12px (12).
+    pub wide: u8,
     pub glyphs: &'static [Glyph],
 }
 
 const FALLBACK: u8 = b'?';
 
+/// The advance of one full-width character, in pixels.
+///
+/// The three faces carry Fusion Pixel's CJK on the 16px grid, where a full-width
+/// glyph advances 12px in all of them. Measurement has to know it: the raster
+/// tables are printable ASCII, so without this a Chinese character would be
+/// measured as `?` (6px) and `fit()` would pass twice the text through, to be
+/// clipped at the panel's edge instead of truncated with `..`.
+const WIDE_ADVANCE: u8 = 12; // 默认值，仅用于文档与断言；实际取自 BitmapFont::wide
+
+/// Whether `c` is drawn from the wide part of the faces: the CJK blocks and the
+/// full-width forms. Everything else still goes through the ASCII tables, with the
+/// transliteration in [`ascii`] as the answer for letters the tables do not have.
+pub fn is_wide(c: char) -> bool {
+    matches!(
+        u32::from(c),
+        0x2E80..=0x9FFF | 0xF900..=0xFAFF | 0xFE30..=0xFE4F | 0xFF00..=0xFF60 | 0xFFE0..=0xFFE6
+    )
+}
+
 impl BitmapFont {
+    /// The advance of one character, wide ones included.
+    pub fn advance(&self, c: char) -> u8 {
+        if is_wide(c) {
+            self.wide
+        } else {
+            self.glyph(c).advance
+        }
+    }
+
     pub fn glyph(&self, c: char) -> &Glyph {
         let code = u32::from(c);
         let index = code
@@ -43,7 +74,7 @@ impl BitmapFont {
     /// includes a trailing spacing column that the last glyph does not need.
     /// Reproduced exactly: status-bar right alignment depends on it.
     pub fn text_width(&self, text: &str) -> u16 {
-        let sum: u16 = text.chars().map(|c| u16::from(self.glyph(c).advance)).sum();
+        let sum: u16 = text.chars().map(|c| u16::from(self.advance(c))).sum();
         sum.saturating_sub(1)
     }
 
@@ -152,9 +183,11 @@ fn drawable(lower: char) -> Option<&'static str> {
 ///
 /// What is covered is the Latin letters with marks on them and the Cyrillic
 /// alphabet, Serbian and Ukrainian included, which between them are what a
-/// European radio station puts in a title. Anything else is still `?`, and becomes
-/// one here rather than at the glyph table, so a string measured in Rust is the
-/// string that gets drawn.
+/// European radio station puts in a title. The wide scripts are not folded: the
+/// faces carry Fusion Pixel's CJK, Slint draws a Chinese SSID as it arrives, and so
+/// measuring it here rather than rewriting it is what keeps the measured string and
+/// the drawn string the same one. Anything else is still `?`, and becomes one here
+/// rather than at the glyph table.
 ///
 /// Case is kept as the writer meant it: a capital in front of a lowercase letter
 /// starts a word, so "Кино" is "Kino", and a capital next to another is inside
@@ -167,6 +200,12 @@ pub fn ascii(text: &str) -> String {
             // A control character has no glyph either, and a tab or a newline in a
             // title is a gap between words.
             out.push(if (' '..='~').contains(&c) { c } else { ' ' });
+            continue;
+        }
+        if is_wide(c) {
+            // The faces draw these; folding them would be what turns a Chinese SSID
+            // into a row of question marks.
+            out.push(c);
             continue;
         }
         let lower = c.to_lowercase().next().unwrap_or(c);
@@ -282,6 +321,25 @@ mod tests {
         assert_eq!(LATIN_1.len(), 0xff - 0xc0 + 1, "Latin-1 Supplement");
         assert_eq!(LATIN_A.len(), 0x17f - 0x100 + 1, "Latin Extended-A");
         assert_eq!(CYRILLIC.len(), 0x45f - 0x430 + 1, "Cyrillic");
+    }
+
+    #[test]
+    fn a_wide_character_measures_twelve_pixels() {
+        assert_eq!(ROW.text_width("未连接"), 3 * 12 - 1);
+        assert_eq!(ROW.text_width("a未"), u16::from(ROW.glyph('a').advance) + 12 - 1);
+    }
+
+    #[test]
+    fn fit_cuts_chinese_at_the_budget() {
+        let cut = fit("无操作时关闭背光", 60);
+        assert!(tw(&cut) <= 60, "{cut:?} is {}px", tw(&cut));
+        assert!(cut.ends_with(".."));
+    }
+
+    #[test]
+    fn ascii_leaves_chinese_alone() {
+        assert_eq!(ascii("网络"), "网络");
+        assert_eq!(ascii("Кино"), "Kino");
     }
 
     #[test]
