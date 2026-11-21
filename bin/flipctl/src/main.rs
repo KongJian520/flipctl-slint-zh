@@ -573,7 +573,7 @@ mod demo {
             Row { label: "menu.main.apps", icon: 3, frames: 9, stat: Stat::None, act: Act::Apps },
             Row { label: "menu.main.files", icon: 4, frames: 10, stat: Stat::None, act: Act::Nothing },
             Row { label: "menu.main.network", icon: 5, frames: 10, stat: Stat::None, act: Act::Sub(&NETWORK) },
-            Row { label: "Testing: flipctl2", icon: 6, frames: 9, stat: Stat::None, act: Act::Flipctl2 },
+            Row { label: "menu.main.prototype", icon: 6, frames: 9, stat: Stat::None, act: Act::Flipctl2 },
             Row { label: "menu.main.settings", icon: 7, frames: 10, stat: Stat::None, act: Act::Sub(&SETTINGS) },
         ],
     };
