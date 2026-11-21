@@ -151,9 +151,10 @@ changes screen.
    75%-white composite of a token is allowed.
 2. **Font size is always 16px** and `SLINT_FONT_SIZES` is pinned to it. The pixel
    fonts rasterise with zero partial coverage at 16 and antialias at 15 or 17.
-3. **`font-family` takes the family name.** `"HaxrCorp 4090"`, not
-   `"HaxrCorp 4090 FlipCTL"`. A wrong name substitutes a fallback face with no
-   warning and antialiases every glyph.
+3. **`font-family` takes the family name.** `"FlipCTL Title"`, not the file's name
+   `FlipCTL-Title.otf` and not the family the source face had before the CJK went
+   in. A wrong name substitutes a fallback face with no warning and antialiases
+   every glyph.
 4. **No `border-radius`.** One corner rule, the 45-degree chamfer, generated for
    any radius by `SelectorFrame` in `ui/frame.slint` (which also does per-corner
    flags, the drop shadow and the fill). `docs/inventory.md` explains why
@@ -162,9 +163,14 @@ changes screen.
    measurement of `"Connected to: "` lands two pixels short. Measure that kind of
    string in Rust with `flipper_ui::font::{TITLE, ROW, ROW_ACTIVE}` and pass the
    offset in.
-6. **The fonts are printable ASCII, 32..126.** No ellipsis, em dash or bullet: an
-   unknown glyph draws as `?`. Truncate with `..`, show an unknown value as `-`,
-   mask a password with `*`.
+6. **A glyph the faces do not carry draws as `?`.** The three faces hold printable
+   ASCII plus the CJK of the languages the image ships — title face at the 10px
+   design, row faces at 12px — so the rule is no longer "ASCII only" but "what the
+   faces carry". `docs/i18n.md` is the design and `docs/inventory.md` records the
+   divergence from the prototype, which was ASCII-only. Still: no ellipsis, em dash
+   or bullet. Truncate with `..`, show an unknown value as `-`, mask a password with
+   `*`. A language whose script the faces do not carry needs another face set; that
+   is a font decision, not a code one.
 7. **The panel is 8-bit greyscale.** A token whose channels differ is shifted by
    `drm_fb_xrgb8888_to_gray8`; `tests/tokens.rs` rejects non-greys.
 

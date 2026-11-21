@@ -1,168 +1,135 @@
-//! The panel's copy in each language, and which one is being drawn.
+//! The panel's copy, in every language the build carries.
 //!
-//! The English text is the key. That is deliberate and it is the whole design: the
-//! menu tables, the status strings and every screen's labels are `&'static str`
-//! literals that also serve as identifiers (`row.label == "5G Modem"`,
-//! `card_menu(title)`), so turning them into an enum would mean rewriting the data
-//! and every comparison with it. Looking the translation up by the string it
-//! replaces keeps those comparisons working on the language-independent English and
-//! leaves one table to maintain.
+//! The source of truth is `locales/*.toml` — one file per language, `"id" = "text"`,
+//! the file's `locale` naming itself. `build.rs` reads them, refuses to build when one
+//! is missing an id another has, and writes the tables in below. A language is
+//! therefore added by adding a file: no code changes, no list to keep in step.
 //!
-//! A string that is not in the table comes back unchanged, so a missing entry shows
-//! English rather than nothing — the same failure the panel had before there was a
-//! table at all. `tests/strings.rs` checks the table for duplicate keys.
+//! Keys are stable ids (`menu.network.airplane`), not the English text. The text moves
+//! when somebody improves the wording; the id must not, because it is what every
+//! translation and every comparison is written against.
 //!
-//! Which language is drawn is a runtime value, not a compile-time one: the faces
-//! carry both scripts, so switching costs a redraw and nothing else.
+//! Lookups happen where text is drawn, not where it is stored: a menu's rows and
+//! breadcrumb, a detail row's label and value, a screen's breadcrumb, the soft keys,
+//! the status words. Five places, so the tables reach ten screens without two hundred
+//! call sites to keep in step.
+//!
+//! [`t`] answers for anything: a key finds its text, a string that is not a key (an IP
+//! address, an SSID, a byte count) comes back as itself. A key the current locale
+//! lacks falls back to `en`, and a key nothing has falls back to the key — visible,
+//! which is the point, rather than an empty row.
 
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Lang {
-    En,
-    Zh,
+include!(concat!(env!("OUT_DIR"), "/i18n_generated.rs"));
+
+/// No locale chosen yet, so `locale()` answers with the default one.
+const UNSET: usize = usize::MAX;
+
+static CURRENT: AtomicUsize = AtomicUsize::new(UNSET);
+
+/// The default: Chinese, because that is the panel this build is for. A build that
+/// wants another default changes this one line.
+const DEFAULT: &str = "zh-Hans";
+
+/// Every language in the image, `en` first.
+pub fn locales() -> &'static [Locale] {
+    LOCALES
 }
 
-static LANG: AtomicU8 = AtomicU8::new(Lang::Zh as u8);
+/// The language being drawn.
+pub fn locale() -> &'static Locale {
+    &LOCALES[index()]
+}
 
-pub fn lang() -> Lang {
-    match LANG.load(Ordering::Relaxed) {
-        1 => Lang::Zh,
-        _ => Lang::En,
+fn index() -> usize {
+    let at = CURRENT.load(Ordering::Relaxed);
+    if at == UNSET {
+        LOCALES.iter().position(|l| l.id == DEFAULT).unwrap_or(0)
+    } else {
+        at
     }
 }
 
-/// Switch the language. The caller redraws; nothing here knows about screens.
-pub fn set_lang(lang: Lang) {
-    LANG.store(lang as u8, Ordering::Relaxed);
+fn texts(at: usize) -> &'static [(&'static str, &'static str)] {
+    TEXTS[at]
 }
 
-/// The copy for `text` in the current language, or `text` itself when the table has
-/// no entry for it.
-pub fn tr(text: &'static str) -> &'static str {
-    if lang() == Lang::En {
+fn find<'a>(table: &'static [(&'static str, &'static str)], key: &'a str) -> Option<&'a str> {
+    table.binary_search_by(|(id, _)| (*id).cmp(key)).ok().map(|at| table[at].1)
+}
+
+/// Switch the language. False when no such locale is in the build; the caller is
+/// expected to redraw either way.
+pub fn set_locale(id: &str) -> bool {
+    match LOCALES.iter().position(|l| l.id == id) {
+        Some(at) => {
+            CURRENT.store(at, Ordering::Relaxed);
+            true
+        }
+        None => false,
+    }
+}
+
+/// The text for `key` in the current language.
+///
+/// Takes any `&str` rather than a `&'static str` so a detail row's value (an IP
+/// address, an SSID) can pass through the same door: it is not a key, so it comes
+/// back as itself. A key from the tables is `'static` and narrows to the caller's
+/// lifetime for free.
+pub fn t<'a>(key: &'a str) -> &'a str {
+    if let Some(text) = find(texts(index()), key) {
         return text;
     }
-    ZH.binary_search_by(|(en, _)| (*en).cmp(text))
-        .map(|at| ZH[at].1)
-        .unwrap_or(text)
+    // `en` is the source language, so it is what a half-translated locale falls back to.
+    find(texts(0), key).unwrap_or(key)
 }
 
-/// The same lookup for a string that is not necessarily `'static`: a row's value, a
-/// device name, an SSID. Not found means the input comes back, so passing a value
-/// that happens to be dynamic costs nothing.
-pub fn tr_any<'a>(text: &'a str) -> &'a str {
-    if lang() == Lang::En {
-        return text;
-    }
-    ZH.binary_search_by(|(en, _)| (*en).cmp(text))
-        .map(|at| ZH[at].1)
-        .unwrap_or(text)
+/// The source language's table: every id the build carries, sorted.
+pub fn ids() -> &'static [(&'static str, &'static str)] {
+    texts(0)
 }
 
-/// Simplified Chinese, sorted by the English key so `tr` can binary-search it.
-pub const ZH: &[(&str, &str)] = &[
-    ("5G Modem", "5G 模块"),
-    ("Airplane mode", "飞行模式"),
-    ("App Manager", "应用管理"),
-    ("Apps", "应用"),
-    ("Back", "返回"),
-    ("Battery", "电池"),
-    ("Battery info", "电池信息"),
-    ("CPU", "CPU"),
-    ("CPU serial", "CPU 序列号"),
-    ("Capacity", "容量"),
-    ("Channel", "通道"),
-    ("Checking the build server...", "正在检查构建服务器…"),
-    ("Commit", "提交"),
-    ("Cycles", "循环次数"),
-    ("Default gateways:", "默认网关："),
-    ("Desktop Computer", "桌面电脑"),
-    ("Disk", "磁盘"),
-    ("Disk info", "磁盘信息"),
-    ("Do not power off", "请勿断电"),
-    ("Duplex", "双工"),
-    ("Ethernet", "以太网"),
-    ("Files", "文件"),
-    ("Health", "健康度"),
-    ("Info", "信息"),
-    ("Install type", "安装类型"),
-    ("Kernel", "内核"),
-    ("LED Brightness", "LED 亮度"),
-    ("Life used", "已用寿命"),
-    ("Link", "链路"),
-    ("Link speed", "链路速率"),
-    ("MCU", "MCU"),
-    ("Maskrom", "Maskrom"),
-    ("Memory", "内存"),
-    ("Model", "型号"),
-    ("Modem", "模块"),
-    ("Network", "网络"),
-    ("No default routes", "无默认路由"),
-    ("Not available", "不可用"),
-    ("Not found", "未找到"),
-    ("Not mounted", "未挂载"),
-    ("OFF", "关"),
-    ("ON", "开"),
-    ("OS", "系统"),
-    ("OS Profiles", "系统配置"),
-    ("Power", "电源"),
-    ("Power Management", "电源管理"),
-    ("Profile", "配置"),
-    ("QR", "QR"),
-    ("Reboot", "重启"),
-    ("Reboots into the installer", "重启进入安装器"),
-    ("Reinstall FlipperOS", "重装系统"),
-    ("Routing info", "路由信息"),
-    ("Run", "运行"),
-    ("SD Card", "SD 卡"),
-    ("SD card", "SD 卡"),
-    ("Self Check", "自检"),
-    ("Settings", "设置"),
-    ("Shutdown", "关机"),
-    ("Signal", "信号"),
-    ("Size", "大小"),
-    ("Slot", "槽位"),
-    ("SoC", "SoC"),
-    ("Starting the installer", "正在启动安装器"),
-    ("System files changed", "系统文件已变更"),
-    ("System info", "系统信息"),
-    ("TAC", "TAC"),
-    ("Temp", "温度"),
-    ("Testing", "测试"),
-    ("UFS", "UFS"),
-    ("USB-C1 power out", "USB-C1 供电"),
-    ("Unknown", "未知"),
-    ("Update FlipperOS", "更新系统"),
-    ("Updated automatically", "自动更新"),
-    ("Uptime", "运行时长"),
-    ("Version", "版本"),
-    ("Voltage", "电压"),
-    ("Wattmeter", "功率计"),
-    ("connected", "已连接"),
-    ("metric", "度量值"),
-    ("not connected", "未连接"),
-    ("via", "经"),
-];
+/// Whether the source language has text for `key`. For tests that check the keys
+/// the code uses are the keys the catalogue carries.
+pub fn has(key: &str) -> bool {
+    find(texts(0), key).is_some()
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn the_table_is_sorted_and_unique() {
-        for pair in ZH.windows(2) {
-            assert!(pair[0].0 < pair[1].0, "{:?} is out of order", pair[1].0);
+    fn every_locale_names_itself() {
+        for locale in locales() {
+            assert!(!locale.id.is_empty());
+            assert!(!locale.name.is_empty(), "{} has no name", locale.id);
         }
     }
 
     #[test]
-    fn a_missing_key_comes_back_as_itself() {
-        set_lang(Lang::Zh);
-        assert_eq!(tr("Something nobody translated"), "Something nobody translated");
-        set_lang(Lang::En);
-        assert_eq!(tr("Network"), "Network");
-        set_lang(Lang::Zh);
-        assert_eq!(tr("Network"), "网络");
+    fn the_tables_are_sorted_so_the_lookup_can_binary_search() {
+        for (at, table) in TEXTS.iter().enumerate() {
+            for pair in table.windows(2) {
+                assert!(pair[0].0 < pair[1].0, "{}: {} out of order", LOCALES[at].id, pair[1].0);
+            }
+        }
+    }
+
+    #[test]
+    fn a_key_finds_its_text_and_a_value_comes_back_as_itself() {
+        set_locale("en");
+        assert_eq!(t("menu.main.network"), "Network");
+        set_locale("zh-Hans");
+        assert_eq!(t("menu.main.network"), "网络");
+        assert_eq!(t("172.17.0.1"), "172.17.0.1");
+        assert_eq!(t("no.such.key"), "no.such.key");
+    }
+
+    #[test]
+    fn an_unknown_locale_is_refused_rather_than_silently_ignored() {
+        assert!(!set_locale("kl-GL"));
+        assert!(set_locale("zh-Hans"));
     }
 }
