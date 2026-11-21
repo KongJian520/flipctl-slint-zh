@@ -27,8 +27,10 @@ fn rows(model: &[wifi::Row]) -> slint::ModelRc<WifiRow> {
             .map(|r| WifiRow {
                 kind: r.kind,
                 y: r.y as f32,
-                text: r.text.as_str().into(),
-                value: r.value.as_str().into(),
+                // The rows carry ids; the panel draws words. This copy of the
+                // boundary has to translate for the same reason the binary's does.
+                text: flipper_ui::strings::t(&r.text).into(),
+                value: flipper_ui::strings::t(&r.value).into(),
                 text_x: r.text_x as f32,
                 chevron: r.chevron,
             })
@@ -58,8 +60,8 @@ fn detail_rows(model: &[wifi::DetailRow]) -> slint::ModelRc<WifiDetailRow> {
                 kind: r.kind,
                 y: r.y as f32,
                 h: r.h as f32,
-                label: r.label.as_str().into(),
-                value: r.value.as_str().into(),
+                label: flipper_ui::strings::t(&r.label).into(),
+                value: flipper_ui::strings::t(&r.value).into(),
                 selectable: r.selectable,
                 in_card: r.in_card,
                 toggle: r.toggle,
@@ -177,7 +179,7 @@ fn the_wifi_screens_hold_their_geometry() {
         layout.row_w(needs_scroll),
         layout.visible - 1,
     )));
-    screen.set_wifi_modal_tab(wifi::VISIBLE_TAB.into());
+    screen.set_wifi_modal_tab(wifi::tab(wifi::VISIBLE_TAB).into());
     screen.set_wifi_modal_signal(true);
     screen.set_wifi_modal_selected(1);
     screen.set_wifi_modal_bar_total(nets.len() as i32);
@@ -210,7 +212,7 @@ fn the_wifi_screens_hold_their_geometry() {
     let layout = wifi::saved_layout(&names);
     let needs_scroll = wifi::saved_content_h(names.len() as i32) > layout.inner_h;
     screen.set_wifi_net_rows(net_rows(&wifi::saved_rows(&names, layout.row_w(needs_scroll))));
-    screen.set_wifi_modal_tab(wifi::SAVED_TAB.into());
+    screen.set_wifi_modal_tab(wifi::tab(wifi::SAVED_TAB).into());
     screen.set_wifi_modal_signal(false);
     screen.set_wifi_modal_chevron(true);
     screen.set_wifi_modal_selected(1);
@@ -321,7 +323,7 @@ fn wifi_frames_use_only_design_tokens() {
                     list.row_w(needs_scroll),
                     list.visible - 1,
                 )));
-                screen.set_wifi_modal_tab(wifi::VISIBLE_TAB.into());
+                screen.set_wifi_modal_tab(wifi::tab(wifi::VISIBLE_TAB).into());
                 screen.set_wifi_modal_signal(true);
                 screen.set_wifi_modal_selected(1);
                 screen.set_wifi_modal_bar_total(nets.len() as i32);

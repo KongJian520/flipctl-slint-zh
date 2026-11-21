@@ -472,8 +472,15 @@ pub fn security_label(sec: &str) -> String {
 
 /// The tab a modal hangs from. Its own width is what stops the saved-networks
 /// modal shrinking below its title.
-pub const VISIBLE_TAB: &str = "Visible networks";
-pub const SAVED_TAB: &str = "Saved networks";
+pub const VISIBLE_TAB: &str = "wifi.visible_tab";
+pub const SAVED_TAB: &str = "wifi.saved";
+
+/// The tab's words, which are measured as well as drawn: the width the layout
+/// reserves has to be the width of what ends up on the glass, and a language that
+/// says it in more characters needs the room.
+pub fn tab(title: &'static str) -> &'static str {
+    crate::strings::t(title)
+}
 
 /// Where a modal's frame lands and how much of its content fits in it.
 #[derive(Clone, Copy, Debug)]
@@ -563,7 +570,7 @@ pub fn saved_layout(names: &[String]) -> Layout {
         + 2 * metric::WIFI_INNER_PAD
         + 2 * metric::WIFI_TEXT_PAD_L
         + if will_scroll { metric::WIFI_MODAL_GUTTER } else { 0 };
-    let min_w = tw(SAVED_TAB) + 2 * metric::WIFI_TAB_PAD + metric::WIFI_SAVED_MIN_GAP;
+    let min_w = tw(tab(SAVED_TAB)) + 2 * metric::WIFI_TAB_PAD + metric::WIFI_SAVED_MIN_GAP;
     let frame_w = driven.max(min_w).min(metric::WIFI_MODAL_W);
     place(
         frame_w,
@@ -722,7 +729,7 @@ pub struct DetailRow {
     pub in_card: bool,
     /// An action whose value is an ON/OFF toggle, which is Auto join.
     pub toggle: bool,
-    /// A value with nothing behind it yet: "Loading..", "open", "-".
+    /// A value with nothing behind it yet: "wifi.loading", "open", "-".
     pub dim: bool,
     /// Push the value down 2px. The asterisks of a mask sit high in HaxrCorp,
     /// near the ascender, so a mask on the row's own baseline reads as floating.
@@ -735,7 +742,7 @@ fn page_row(kind: i32, y: i32, text: &str, value: &str, chevron: bool, act: Act)
 }
 
 /// What the connected row narrates before the name itself.
-const CONNECTED_TO: &str = "Connected to: ";
+const CONNECTED_TO: &str = "wifi.connected_to";
 
 /// The page's rows, for the radio state as it is now.
 ///
@@ -751,7 +758,7 @@ pub fn page_rows(net: &crate::net::Net) -> Vec<Row> {
         2,
         y,
         "Wi-Fi",
-        if net.wifi_enabled { "ON" } else { "OFF" },
+        if net.wifi_enabled { "state.on" } else { "state.off" },
         false,
         Act::Radio,
     ));
@@ -769,13 +776,13 @@ pub fn page_rows(net: &crate::net::Net) -> Vec<Row> {
         // rather than as the first of a pair with the row below.
         y += metric::WIFI_ROW_H + 1;
     }
-    rows.push(page_row(0, y, "See visible networks", "", true, Act::Visible));
+    rows.push(page_row(0, y, "wifi.see_visible", "", true, Act::Visible));
     y += metric::WIFI_ROW_H;
     rows.push(page_row(1, y, "", "", false, Act::Divider));
     y += metric::WIFI_DIVIDER_H;
-    rows.push(page_row(0, y, "Saved networks", "", true, Act::Saved));
+    rows.push(page_row(0, y, "wifi.saved", "", true, Act::Saved));
     y += metric::WIFI_ROW_H;
-    rows.push(page_row(0, y, "Connect to Hidden Network", "", true, Act::Hidden));
+    rows.push(page_row(0, y, "wifi.connect_hidden", "", true, Act::Hidden));
     rows
 }
 
@@ -882,13 +889,13 @@ fn card_list(out: &mut Vec<DetailRow>, label: &str, items: &[String]) {
 /// gateway and no addresses, which is what makes the card worth drawing for a
 /// saved network as well as for the live one.
 fn family_lines(label: &str, f: &Family) -> Vec<DetailRow> {
-    let mut out = vec![card_kv("Method:", &method(&f.method))];
+    let mut out = vec![card_kv("wifi.method", &method(&f.method))];
     card_list(&mut out, &format!("{label}:"), &f.addresses);
     if !f.gateway.is_empty() {
-        out.push(card_kv("Gateway:", &f.gateway));
+        out.push(card_kv("wifi.gateway", &f.gateway));
     }
     let dns: Vec<String> = f.dns.split(',').filter(|s| !s.is_empty()).map(str::to_string).collect();
-    card_list(&mut out, "DNS:", &dns);
+    card_list(&mut out, "wifi.dns", &dns);
     out
 }
 
@@ -937,16 +944,16 @@ pub fn detail_rows(
 ) -> DetailView {
     let mut rows: Vec<DetailRow> = Vec::new();
     if active {
-        rows.push(action("Disconnect", DetailAct::Disconnect));
+        rows.push(action("wifi.disconnect", DetailAct::Disconnect));
         rows.push(drow(0, metric::WIFI_SECTION_H));
     }
-    rows.push(action("Forget this network", DetailAct::Forget));
+    rows.push(action("wifi.forget", DetailAct::Forget));
     rows.push(drow(0, metric::WIFI_SECTION_H));
 
-    let mut auto = action("Auto join", DetailAct::AutoJoin);
+    let mut auto = action("wifi.auto_join", DetailAct::AutoJoin);
     auto.toggle = true;
     auto.value = match details {
-        Some(d) if d.known => if d.autoconnect { "ON" } else { "OFF" }.into(),
+        Some(d) if d.known => if d.autoconnect { "state.on" } else { "state.off" }.into(),
         _ => "-".into(),
     };
     rows.push(auto);
@@ -976,7 +983,7 @@ pub fn detail_rows(
         // way, so the section is never an empty hole.
         None => {
             let mut line = drow(6, metric::WIFI_KV_H);
-            line.value = if loading { "Loading.." } else { "Unavailable" }.into();
+            line.value = if loading { "wifi.loading" } else { "state.unavailable" }.into();
             line.in_card = true;
             vec![vec![line]]
         }
@@ -1167,7 +1174,7 @@ mod tests {
     fn the_saved_list_is_as_wide_as_its_longest_name() {
         let short = saved_layout(&["a".into()]);
         // Never narrower than its own tab with room either side.
-        let min = tw(SAVED_TAB) + 2 * metric::WIFI_TAB_PAD + metric::WIFI_SAVED_MIN_GAP;
+        let min = tw(tab(SAVED_TAB)) + 2 * metric::WIFI_TAB_PAD + metric::WIFI_SAVED_MIN_GAP;
         assert_eq!(short.frame_w, min);
         // Centred on the panel.
         assert_eq!(short.frame_x, (i32::from(crate::PANEL_W) - short.frame_w) / 2);
@@ -1211,7 +1218,7 @@ mod tests {
         let rows = page_rows(&off);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].act, Act::Radio);
-        assert_eq!(rows[0].value, "OFF");
+        assert_eq!(rows[0].value, "state.off"); // the model carries ids; the panel draws words
         assert_eq!(rows[0].y, metric::WIFI_CONTAINER_Y);
     }
 
@@ -1332,10 +1339,13 @@ mod tests {
         let card = view.rows.iter().find(|r| r.kind == 7).unwrap();
         assert!(card.selectable);
         let line = view.rows.iter().find(|r| r.kind == 6).unwrap();
-        assert_eq!(line.value, "Loading..");
+        assert_eq!(line.value, "wifi.loading");
         // And one that failed to read says something different.
         let gone = detail_rows(None, false, false, false);
-        assert_eq!(gone.rows.iter().find(|r| r.kind == 6).unwrap().value, "Unavailable");
+        assert_eq!(
+            gone.rows.iter().find(|r| r.kind == 6).unwrap().value,
+            "state.unavailable"
+        );
     }
 
     #[test]
@@ -1458,6 +1468,7 @@ mod tests {
         let stderr = "Warning: password not given.\nError: Secrets were required.\n";
         assert_eq!(reason(stderr), "Error: Secrets were required.");
         assert_eq!(whole(stderr), "Warning: password not given. Error: Secrets were required.");
+        // nmcli's own words, not ours: this is the message a dynamic error carries.
         assert_eq!(reason("\nNo network found\n"), "No network found");
         assert_eq!(reason(""), "");
     }

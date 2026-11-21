@@ -45,6 +45,9 @@ fn main() -> ExitCode {
     // The environment wins, then what the Settings row last wrote, then the build's
     // default. The environment stays because it is how a translated screenshot gets
     // taken without changing what the device will do next time.
+    // The panel's own default, which the library does not presume: a build whose
+    // faces carry Chinese starts in Chinese when nothing says otherwise.
+    flipper_ui::strings::set_locale("zh-Hans");
     if let Some(id) = std::env::var("FLIPCTL_LANG").ok().or_else(load_language) {
         if !flipper_ui::strings::set_locale(&id) {
             eprintln!("language       `{id}` is not a locale in this build");
@@ -597,7 +600,13 @@ mod demo {
                     net.ssid.clone()
                 }
             }
-            Stat::ModemBlocked => if net.airplane { "menu.network.airplane" } else { "" }.into(),
+            Stat::ModemBlocked => {
+                if net.airplane {
+                    flipper_ui::strings::t("menu.network.airplane").into()
+                } else {
+                    String::new()
+                }
+            }
             Stat::UsbPower => flipper_ui::usb_pd::Port::read()
                 .filter(|p| p.powering())
                 .and_then(|p| p.sets.get(p.selected).map(|s| s.short()))
@@ -2397,7 +2406,7 @@ mod wifi {
         detail_layout, detail_rows, ensure_visible, fit_password, keep_row_visible,
         next_selectable, one_line, page_rows, passphrase_warning, reason, saved_content_h,
         saved_layout, saved_match, saved_names, saved_rows, selectable, visible_layout,
-        visible_rows, whole, Act, DetailAct, DetailView, Layout, SAVED_TAB, VISIBLE_TAB,
+        tab, visible_rows, whole, Act, DetailAct, DetailView, Layout, SAVED_TAB, VISIBLE_TAB,
     };
     use flipper_ui::wifi::{DetailRow, Details, NetRow, Row, Saved};
 
@@ -2555,8 +2564,9 @@ mod wifi {
                 .map(|r| flipper_ui::ui::WifiRow {
                     kind: r.kind,
                     y: r.y as f32,
-                    text: r.text.as_str().into(),
-                    value: r.value.as_str().into(),
+                    // The rows carry ids and values; the ids become words here.
+                    text: flipper_ui::strings::t(&r.text).into(),
+                    value: flipper_ui::strings::t(&r.value).into(),
                     text_x: r.text_x as f32,
                     chevron: r.chevron,
                 })
@@ -2569,8 +2579,8 @@ mod wifi {
         slint::ModelRc::new(slint::VecModel::from(
             rows.iter()
                 .map(|r| flipper_ui::ui::WifiNetRow {
-                    text: r.text.as_str().into(),
-                    security: r.security.as_str().into(),
+                    text: flipper_ui::strings::t(&r.text).into(),
+                    security: flipper_ui::strings::t(&r.security).into(),
                     quality: r.quality,
                     divider: r.divider,
                 })
@@ -2586,8 +2596,8 @@ mod wifi {
                     kind: r.kind,
                     y: r.y as f32,
                     h: r.h as f32,
-                    label: r.label.as_str().into(),
-                    value: r.value.as_str().into(),
+                    label: flipper_ui::strings::t(&r.label).into(),
+                    value: flipper_ui::strings::t(&r.value).into(),
                     selectable: r.selectable,
                     in_card: r.in_card,
                     toggle: r.toggle,
@@ -3825,7 +3835,7 @@ fn apply_wifi(
                 layout.row_w(needs_scroll),
                 last,
             )));
-            screen.set_wifi_modal_tab(wifi::VISIBLE_TAB.into());
+            screen.set_wifi_modal_tab(wifi::tab(wifi::VISIBLE_TAB).into());
             screen.set_wifi_modal_signal(true);
             // Waiting for the sweep, which is not the same as its having come back
             // with nothing: the spinner says one and the placeholder the other.
@@ -3856,7 +3866,7 @@ fn apply_wifi(
                 &names,
                 layout.row_w(needs_scroll),
             )));
-            screen.set_wifi_modal_tab(wifi::SAVED_TAB.into());
+            screen.set_wifi_modal_tab(wifi::tab(wifi::SAVED_TAB).into());
             screen.set_wifi_modal_chevron(true);
             screen.set_wifi_modal_placeholder(match &saved {
                 // Nobody has looked yet, which reads differently from having looked
@@ -3880,7 +3890,7 @@ fn apply_wifi(
             let needs_scroll = view.content_h > layout.inner_h;
             wifi::fit_password(&mut view.rows, layout.row_w(needs_scroll));
             screen.set_wifi_detail_rows(wifi::detail_model(&view.rows));
-            screen.set_wifi_modal_tab(d.title.as_str().into());
+            screen.set_wifi_modal_tab(flipper_ui::strings::t(&d.title).into());
             screen.set_wifi_modal_selected(d.selected);
             screen.set_wifi_modal_offset(d.scroll as f32);
             screen.set_wifi_modal_bar_total(view.content_h);
@@ -4114,8 +4124,8 @@ fn png(
             slint::SharedString::from("To use 5G Modem you need"),
             slint::SharedString::from("to turn off Airplane mode"),
         ])));
-        screen.set_modal_left("Cancel".into());
-        screen.set_modal_right("Turn off".into());
+        screen.set_modal_left("action.cancel".into());
+        screen.set_modal_right("action.turn_off".into());
     }
     slint::platform::update_timers_and_animations();
 
@@ -7243,7 +7253,7 @@ fn panel(
                         net.set_airplane(false);
                         // menu.js proceeds to the action the dialog interrupted.
                         dialog = Some(Dialog {
-                            lines: vec!["menu.network.modem".into(), "is not ported yet".into()],
+                            lines: vec!["menu.network.modem".into(), "text.not_ported".into()],
                             left: "action.back",
                             right: "",
                             act: DialogAct::None,
@@ -7972,7 +7982,7 @@ fn panel(
                         // scene here.
                         demo::Act::Unported => {
                             dialog = Some(Dialog {
-                                lines: vec![row.label.into(), "is not ported yet".into()],
+                                lines: vec![row.label.into(), "text.not_ported".into()],
                                 left: "action.back",
                                 right: "",
                                 act: DialogAct::None,
@@ -8694,13 +8704,21 @@ fn panel(
                     .map(|d| {
                         d.lines
                             .iter()
-                            .map(|l| slint::SharedString::from(l.as_str()))
+                            .map(|l| {
+                                slint::SharedString::from(flipper_ui::strings::t(l.as_str()))
+                            })
                             .collect::<Vec<_>>()
                     })
                     .unwrap_or_default(),
             )));
-            screen.set_modal_left(dialog.as_ref().map_or("", |d| d.left).into());
-            screen.set_modal_right(dialog.as_ref().map_or("", |d| d.right).into());
+            // A dialog is text drawn over the screen, so it is translated here
+            // like everything else: the model keeps ids, the glass gets words.
+            screen.set_modal_left(
+                flipper_ui::strings::t(dialog.as_ref().map_or("", |d| d.left)).into(),
+            );
+            screen.set_modal_right(
+                flipper_ui::strings::t(dialog.as_ref().map_or("", |d| d.right)).into(),
+            );
         }
         // The USB-C question sits over any dialog, and the flash is its own.
         screen.set_modal_pressed_slot(if usb_ask.is_some() { -1 } else { press.dialog_slot() });
